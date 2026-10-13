@@ -85,9 +85,14 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .lessonlist{max-height:68vh;overflow-y:auto;padding:2px 6px 2px 2px}
 .ldesc{margin-top:14px;line-height:1.75;font-size:15px;opacity:.92}
 .play:disabled{opacity:.35;filter:grayscale(1);cursor:not-allowed}
+.song.cross{border-color:rgba(255,209,102,.45);background:linear-gradient(90deg,rgba(255,209,102,.12),rgba(255,255,255,.04))}
+.song.cross .st small{color:#ffd166;opacity:.9}
+.meta{flex-wrap:wrap}
 .song.boss{border-color:rgba(255,31,90,.6);background:linear-gradient(90deg,rgba(255,31,90,.18),rgba(255,255,255,.04));animation:bossPulse 1.6s ease-in-out infinite}
 .song.boss .st b{color:#ff4f7d;letter-spacing:.06em}
 @keyframes bossPulse{50%{box-shadow:0 0 26px -4px #ff1f5a}}
+#toast{position:fixed;left:50%;bottom:18px;transform:translate(-50%,30px);opacity:0;z-index:20;padding:10px 18px;border-radius:999px;background:rgba(12,14,34,.92);border:1px solid rgba(255,255,255,.2);font-weight:800;font-size:14px;transition:.3s;pointer-events:none}
+#toast.show{opacity:1;transform:translate(-50%,0)}
 #pauseBtn{position:fixed;top:12px;right:12px;z-index:4;width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);font-weight:900;display:none;font-family:'Outfit'}
 
 @media (max-width:720px){
@@ -178,12 +183,25 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 </div>
 
 <button id="pauseBtn" data-act="pause">II</button>
+<div id="toast"></div>
 
 <script>
 'use strict';
 /* ================= CONFIG ================= */
-const LANES = 6;
-const KEYS = ['s','d','f','j','k','l'];
+let LANES = 6;
+const KEYS6 = ['s','d','f','j','k','l'], KEYS5 = ['d','f',' ','j','k'];
+let KEYS = KEYS6, KEY_LABELS = ['S','D','F','J','K','L'];
+// 6 lanes normally; Crossroads songs use 5 lanes (D F Space J K, G/H also work for the middle)
+function setLayout(n){
+  LANES = n;
+  KEYS = n === 5 ? KEYS5 : KEYS6;
+  KEY_LABELS = n === 5 ? ['D','F','SPACE','J','K'] : ['S','D','F','J','K','L'];
+}
+function laneOfKey(k){
+  let l = KEYS.indexOf(k);
+  if (l < 0 && LANES === 5 && (k === 'g' || k === 'h')) l = 2;
+  return l;
+}
 const WIN = { perfect:0.045, great:0.090, good:0.130, bad:0.170 };
 const JUDGE_NAMES = ['PERFECT','GREAT','GOOD','BAD','MISS'];
 const JUDGE_COLORS = ['#ffe066','#ff6fbf','#41cfff','#9b8cff','#8a8f99'];
@@ -226,6 +244,10 @@ const SONGS = [
   { id:'horizon', title:'Event Horizon', artist:'Prism Stage Original', bpm:240, root:58, mode:'minor', prog:[5,4,0,6], seed:191, color:'#ffffff', color2:'#ff2d2d', levels:[6,13,22,29,34,39,'∞'] },
   { id:'singularity', title:'Singularity', artist:'Prism Stage Original', bpm:260, root:57, mode:'minor', prog:[0,6,5,4], seed:277, color:'#b0b8ff', color2:'#ff0040', levels:[6,14,23,30,36,42,'∞'] },
   { id:'absolutezero', title:'Absolute Zero', artist:'Prism Stage Original', bpm:280, root:55, mode:'minor', prog:[5,3,4,0], seed:281, color:'#e0f7ff', color2:'#3b82ff', levels:[7,15,24,31,38,45,'∞'] },
+  { id:'crossroads',  title:'Crossroads',         artist:'Prism Stage Original', bpm:120, root:62, mode:'major', prog:[0,4,5,3], seed:301, color:'#ffd166', color2:'#4dd9ff', levels:[1,4,9,16,22,27,'∞'], cross:true, roads:2 },
+  { id:'junction',    title:'Three-Way Junction', artist:'Prism Stage Original', bpm:140, root:57, mode:'minor', prog:[0,5,6,4], seed:313, color:'#7dffb3', color2:'#ff6fbf', levels:[2,6,12,19,25,30,'∞'], cross:true, roads:3 },
+  { id:'interchange', title:'Interchange',        artist:'Prism Stage Original', bpm:168, root:64, mode:'major', prog:[3,4,0,5], seed:331, color:'#66e0ff', color2:'#ffb347', levels:[3,8,15,23,29,34,'∞'], cross:true, roads:3 },
+  { id:'spaghetti',   title:'Spaghetti Junction', artist:'Prism Stage Original', bpm:196, root:59, mode:'minor', prog:[0,6,5,4], seed:347, color:'#ff5fa2', color2:'#b6f36b', levels:[4,11,19,27,32,38,'∞'], cross:true, roads:3 },
   { id:'prismbreaker', title:'PRISM BREAKER', artist:'Prism Stage Original', bpm:200, root:58, mode:'minor', prog:[0,5,6,4], seed:999, color:'#ff1f5a', color2:'#ffffff', levels:[5,12,20,28,33,'50','∞'], boss:true },
 ];
 const BEGINNER_WIN = { perfect:0.07, great:0.13, good:0.19, bad:0.25 };
@@ -688,8 +710,31 @@ function getGen(i, d){
   return genCache[i] || (genCache[i] = generateSong(SONGS[i]));
 }
 function getChart(i, d){
-  const g = getGen(i, d);
-  return g.charts[d] || (g.charts[d] = SONGS[i].boss && d === 5 ? buildBossChart(g) : d === INSANE ? buildMasterChart(g) : buildChart(g, d));
+  const g = getGen(i, d), song = SONGS[i];
+  if (g.charts[d]) return g.charts[d];
+  const saved = LANES;
+  setLayout(song.cross ? 5 : 6);
+  try {
+    let ch = song.boss && d === 5 ? buildBossChart(g) : d === INSANE ? buildMasterChart(g) : buildChart(g, d);
+    if (song.cross) ch = assignRoads(ch, g, d, song.roads);
+    return (g.charts[d] = ch);
+  } finally { setLayout(saved); }
+}
+// Crossroads: every note travels down one of several roads that all meet at the same bar.
+// Easier difficulties switch roads rarely; Master/Insane pick a road for every single note.
+function assignRoads(notes, G, level, roads){
+  const R = rng(G.seed * 13 + level * 5 + 7), beat = G.beat;
+  const blockBeats = [16, 16, 4, 2, 1, 0, 0][level];
+  let prevBlock = -1, road = Math.floor(R() * roads);
+  for (const n of notes){
+    if (blockBeats === 0) road = Math.floor(R() * roads);
+    else {
+      const b = Math.floor(n.t / (blockBeats * beat) + 1e-6);
+      if (b !== prevBlock){ prevBlock = b; road = (road + 1 + Math.floor(R() * (roads - 1))) % roads; }
+    }
+    n.road = road;
+  }
+  return notes;
 }
 
 /* ================= AUDIO ================= */
@@ -992,6 +1037,8 @@ function startGame(lessonIdx){
     g = getGen(sel.song, sel.diff); src = getChart(sel.song, sel.diff); song = SONGS[sel.song];
     label = DIFFS[diff].name; labelColor = DIFFS[diff].color;
   }
+  const crossMode = lessonIdx == null && !!song.cross;
+  setLayout(crossMode ? 5 : 6);
   const notes = src.map((n, i) => ({ ...n, state: 0, id: i }));
   const events = src.events || [];
   const total = notes.reduce((a, n) => a + (n.type === 'hold' ? 2 : 1), 0);
@@ -1004,7 +1051,7 @@ function startGame(lessonIdx){
     fx: [], parts: [], lastJudge: null, laneFlash: new Array(LANES).fill(0),
     paused: false, ended: false, failed: false, auto: settings.auto,
     beatPulse: 0, comboPulse: 0, touch: false,
-    events, speedSegs: events.filter(e => e.kind === 'speed'),
+    events, speedSegs: events.filter(e => e.kind === 'speed'), roads: crossMode ? song.roads : 1,
   };
   down.clear(); ptrs.clear();
   showScreen(null);
@@ -1310,19 +1357,59 @@ function drawGame(dt){
     cx.translate((Math.random() - .5) * a * 2, (Math.random() - .5) * a * 2);
   }
 
-  // highway
-  cx.beginPath();
-  cx.moveTo(xAt(0, top.s), top.y); cx.lineTo(xAt(LANES, top.s), top.y);
-  cx.lineTo(xAt(LANES, sBot), H); cx.lineTo(xAt(0, sBot), H); cx.closePath();
-  let g = cx.createLinearGradient(0, top.y, 0, H);
-  g.addColorStop(0, 'rgba(14,16,40,.15)'); g.addColorStop(0.6, 'rgba(14,16,40,.7)'); g.addColorStop(1, 'rgba(10,12,30,.92)');
-  cx.fillStyle = g; cx.fill();
+  // roads: one normally; Crossroads songs lean 2-3 roads in from different directions onto the same bar
+  const multi = G.roads > 1;
+  const skews = !multi ? [0] : G.roads === 2 ? [-0.5, 0.5] : [-0.62, 0, 0.62];
+  const roadCols = [song.color, song.color2, '#ffffff'];
+  const yBot = multi ? L.judgeY : H, sB = multi ? 1 : sBot;
+  const skewIn = k => { if (k) cx.transform(1, 0, -k, 1, k * L.judgeY, 0); };
+  const beat = G.gen.beat;
+
+  skews.forEach((k, r) => {
+    cx.save(); skewIn(k);
+    const edgeCol = multi ? roadCols[r % 3] : song.color;
+    cx.beginPath();
+    cx.moveTo(xAt(0, top.s), top.y); cx.lineTo(xAt(LANES, top.s), top.y);
+    cx.lineTo(xAt(LANES, sB), yBot); cx.lineTo(xAt(0, sB), yBot); cx.closePath();
+    const g = cx.createLinearGradient(0, top.y, 0, yBot);
+    g.addColorStop(0, 'rgba(14,16,40,.15)'); g.addColorStop(0.6, `rgba(14,16,40,${multi ? .45 : .7})`); g.addColorStop(1, `rgba(10,12,30,${multi ? .6 : .92})`);
+    cx.fillStyle = g; cx.fill();
+    for (let l = 0; l < LANES; l += 2){
+      cx.beginPath();
+      cx.moveTo(xAt(l, top.s), top.y); cx.lineTo(xAt(l + 1, top.s), top.y); cx.lineTo(xAt(l + 1, sB), yBot); cx.lineTo(xAt(l, sB), yBot); cx.closePath();
+      cx.fillStyle = multi ? hexA(edgeCol, 0.04) : 'rgba(255,255,255,.025)'; cx.fill();
+    }
+    for (let i = 0; i <= LANES; i++){
+      cx.beginPath(); cx.moveTo(xAt(i, top.s), top.y); cx.lineTo(xAt(i, sB), yBot);
+      const edge = i === 0 || i === LANES;
+      cx.strokeStyle = edge ? hexA(edgeCol, 0.8) : (LANES % 2 === 0 && i === LANES / 2) ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)';
+      cx.lineWidth = edge ? 2.5 : 1; cx.stroke();
+    }
+    for (let b = Math.max(0, Math.floor(now / beat)); D(b * beat) < 1.05; b++){
+      const d = D(b * beat);
+      if (d < 0) continue;
+      const p = proj(d);
+      cx.beginPath(); cx.moveTo(xAt(0, p.s), p.y); cx.lineTo(xAt(LANES, p.s), p.y);
+      cx.strokeStyle = b % 4 === 0 ? (multi ? hexA(edgeCol, 0.35) : 'rgba(255,255,255,.22)') : 'rgba(255,255,255,.07)';
+      cx.lineWidth = 1; cx.stroke();
+    }
+    cx.restore();
+  });
+  if (multi){ // shared strip below the bar where all roads meet
+    cx.beginPath();
+    cx.moveTo(xAt(0, 1), L.judgeY); cx.lineTo(xAt(LANES, 1), L.judgeY); cx.lineTo(xAt(LANES, sBot), H); cx.lineTo(xAt(0, sBot), H); cx.closePath();
+    cx.fillStyle = 'rgba(10,12,30,.92)'; cx.fill();
+    for (let i = 0; i <= LANES; i++){
+      cx.beginPath(); cx.moveTo(xAt(i, 1), L.judgeY); cx.lineTo(xAt(i, sBot), H);
+      cx.strokeStyle = i === 0 || i === LANES ? hexA(song.color, 0.75) : 'rgba(255,255,255,.1)'; cx.lineWidth = i === 0 || i === LANES ? 2.5 : 1; cx.stroke();
+    }
+  }
 
   // lane flashes
   for (let l = 0; l < LANES; l++){
     const f = G.laneFlash[l];
     if (f > 0.01){
-      const a = proj(0), b = proj(0.9);
+      const a = proj(0), b = proj(multi ? 0.35 : 0.9);
       cx.beginPath();
       cx.moveTo(xAt(l, a.s), a.y); cx.lineTo(xAt(l + 1, a.s), a.y); cx.lineTo(xAt(l + 1, b.s), b.y); cx.lineTo(xAt(l, b.s), b.y); cx.closePath();
       const lg = cx.createLinearGradient(0, a.y, 0, b.y);
@@ -1330,31 +1417,6 @@ function drawGame(dt){
       cx.fillStyle = lg; cx.fill();
     }
     G.laneFlash[l] = Math.max(0, f - dt * 4);
-  }
-
-  // subtle alternating lane tint
-  for (let l = 0; l < LANES; l += 2){
-    cx.beginPath();
-    cx.moveTo(xAt(l, top.s), top.y); cx.lineTo(xAt(l + 1, top.s), top.y); cx.lineTo(xAt(l + 1, sBot), H); cx.lineTo(xAt(l, sBot), H); cx.closePath();
-    cx.fillStyle = 'rgba(255,255,255,.025)'; cx.fill();
-  }
-  // lane lines
-  for (let i = 0; i <= LANES; i++){
-    cx.beginPath(); cx.moveTo(xAt(i, top.s), top.y); cx.lineTo(xAt(i, sBot), H);
-    const edge = i === 0 || i === LANES;
-    cx.strokeStyle = edge ? hexA(song.color, 0.75) : i === LANES / 2 ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)';
-    cx.lineWidth = edge ? 2.5 : 1; cx.stroke();
-  }
-
-  // beat lines
-  const beat = G.gen.beat;
-  for (let b = Math.max(0, Math.floor(now / beat)); D(b * beat) < 1.05; b++){
-    const d = D(b * beat);
-    if (d < 0) continue;
-    const p = proj(d);
-    cx.beginPath(); cx.moveTo(xAt(0, p.s), p.y); cx.lineTo(xAt(LANES, p.s), p.y);
-    cx.strokeStyle = b % 4 === 0 ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.07)';
-    cx.lineWidth = 1; cx.stroke();
   }
 
   // judge zone
@@ -1376,11 +1438,11 @@ function drawGame(dt){
     cx.font = `700 ${Math.round(13 * u + 5)}px Outfit, sans-serif`; cx.textAlign = 'center'; cx.textBaseline = 'middle';
     for (let l = 0; l < LANES; l++){
       cx.fillStyle = `rgba(255,255,255,${0.3 + G.laneFlash[l] * 0.6})`;
-      cx.fillText(KEYS[l].toUpperCase(), xAt(l + .5, 1.06), L.judgeY + (L.judgeY - L.vanishY) * 0.06 + 6);
+      cx.fillText(KEY_LABELS[l], xAt(l + .5, 1.06), L.judgeY + (L.judgeY - L.vanishY) * 0.06 + 6);
     }
   }
 
-  // notes
+  // notes, drawn on their own road
   const vis_ = [];
   const N = G.notes;
   for (let i = G.first; i < N.length; i++){
@@ -1389,20 +1451,25 @@ function drawGame(dt){
     if (n.state === 2) continue;
     vis_.push(n);
   }
-  for (const n of vis_) if (n.type === 'hold'){
-    const tA = n.state === 1 ? now : n.t;
-    if (D(tA) > 1.05) continue;
-    cx.globalAlpha = noteAlpha(G, Math.max(0, D(tA)), now);
-    drawHoldBand(n, tA, n.end, n.state === 1, D);
-    cx.globalAlpha = 1;
-  }
-  for (let i = vis_.length - 1; i >= 0; i--){
-    const n = vis_[i];
-    let d = n.state === 1 || n.state === 3 ? 0 : D(n.t);
-    if (d < -0.18 || d > 1.05) continue;
-    if (n.state === 1) drawNote(n, 0, false, holdPos(n, now));
-    else { cx.globalAlpha = noteAlpha(G, d, now); drawNote(n, d, n.state === 3); cx.globalAlpha = 1; }
-  }
+  skews.forEach((k, r) => {
+    cx.save(); skewIn(k);
+    for (const n of vis_) if (n.type === 'hold' && ((n.road || 0) % skews.length) === r){
+      const tA = n.state === 1 ? now : n.t;
+      if (D(tA) > 1.05) continue;
+      cx.globalAlpha = noteAlpha(G, Math.max(0, D(tA)), now);
+      drawHoldBand(n, tA, n.end, n.state === 1, D);
+      cx.globalAlpha = 1;
+    }
+    for (let i = vis_.length - 1; i >= 0; i--){
+      const n = vis_[i];
+      if (((n.road || 0) % skews.length) !== r) continue;
+      let d = n.state === 1 || n.state === 3 ? 0 : D(n.t);
+      if (d < -0.18 || d > 1.05) continue;
+      if (n.state === 1) drawNote(n, 0, false, holdPos(n, now));
+      else { cx.globalAlpha = noteAlpha(G, d, now); drawNote(n, d, n.state === 3); cx.globalAlpha = 1; }
+    }
+    cx.restore();
+  });
 
   // hit fx
   for (let i = G.fx.length - 1; i >= 0; i--){
@@ -1585,6 +1652,34 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
   screen = id || 'game';
   $('pauseBtn').style.display = screen === 'game' && game ? 'block' : 'none';
+  if (screen !== 'game' && screen !== 'pause') tryReload();
+}
+
+/* ================= AUTO UPDATE =================
+   Every 30s, re-download this page. If it changed (a new version was deployed), reload —
+   but never in the middle of a song: wait until you're back in a menu. */
+let updatePending = false, updateBase = null;
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 3500); }
+function tryReload(){
+  if (!updatePending) return;
+  if (screen === 'game' || screen === 'pause'){ toast('✨ Update ready — it\'ll load after this song'); return; }
+  toast('✨ New version — updating…');
+  setTimeout(() => location.reload(), 900);
+}
+async function checkUpdate(){
+  try {
+    const r = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const txt = await r.text();
+    let h = 0; for (let i = 0; i < txt.length; i++) h = (h * 31 + txt.charCodeAt(i)) | 0;
+    if (updateBase === null) updateBase = h;
+    else if (h !== updateBase && !updatePending){ updatePending = true; tryReload(); }
+  } catch (e) {}
+}
+if (location.protocol.startsWith('http')){
+  checkUpdate();
+  setInterval(checkUpdate, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 }
 function goSelect(){ initAudio(); showScreen('select'); renderSelect(); sfx('blip'); }
 
@@ -1593,8 +1688,8 @@ function renderSelect(){
   document.documentElement.style.setProperty('--c', s.color);
   document.documentElement.style.setProperty('--c2', s.color2);
   $('songList').innerHTML = SONGS.map((x, i) =>
-    `<button class="song ${i === sel.song ? 'on' : ''} ${x.boss ? 'boss' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
-      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${x.boss ? '★ FINAL BOSS · ' : ''}${x.bpm} BPM</small></span></button>`).join('');
+    `<button class="song ${i === sel.song ? 'on' : ''} ${x.boss ? 'boss' : x.cross ? 'cross' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
+      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${x.boss ? '★ FINAL BOSS · ' : x.cross ? '⇶ CROSSROADS · ' + x.roads + ' roads · ' : ''}${x.bpm} BPM</small></span></button>`).join('');
   { const on = document.querySelector('#songList .song.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' }); }
   $('dTitle').textContent = s.title;
   $('dArtist').textContent = `${s.artist} · ${s.bpm} BPM`;
@@ -1602,7 +1697,7 @@ function renderSelect(){
     `<button class="diff ${i === sel.diff ? 'on' : ''}" data-diff="${i}" style="--dc:${d.color}"><small>${d.name}</small><b>${s.levels[i]}</b></button>`).join('');
   const ch = getChart(sel.song, sel.diff);
   const best = store.get(`best_${s.id}_${DIFFS[sel.diff].name}`, null);
-  $('meta').innerHTML = `<span>${ch.length} notes</span><span>Best: ${best ? best.score.toLocaleString() + ' · ' + best.rank + (best.badge ? ' · ' + best.badge : '') : '—'}</span>`;
+  $('meta').innerHTML = (s.cross ? `<span style="color:#ffd166">⇶ ${s.roads} roads · keys D F Space J K</span>` : '') + `<span>${ch.length} notes</span><span>Best: ${best ? best.score.toLocaleString() + ' · ' + best.rank + (best.badge ? ' · ' + best.badge : '') : '—'}</span>`;
   $('oSpeed').textContent = settings.speed;
   $('oOffset').textContent = (settings.offset > 0 ? '+' : '') + settings.offset + ' ms';
   $('oAuto').textContent = settings.auto ? 'ON' : 'OFF';
@@ -1676,7 +1771,7 @@ addEventListener('keydown', e => {
   if ([' ', 'enter', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'tab'].includes(k)) e.preventDefault();
   initAudio();
   if (screen === 'game'){
-    const l = KEYS.indexOf(k);
+    const l = laneOfKey(k);
     if (l >= 0){
       if (!e.repeat){ down.add('k' + l); if (game && !game.paused && !game.ended && game.t0) pressLane(l, 'k' + l); }
       return;
@@ -1723,7 +1818,7 @@ addEventListener('keydown', e => {
   }
 });
 addEventListener('keyup', e => {
-  const l = KEYS.indexOf(e.key.toLowerCase());
+  const l = laneOfKey(e.key.toLowerCase());
   if (l >= 0) down.delete('k' + l);
   if (e.key === ' ') e.preventDefault();
 });
