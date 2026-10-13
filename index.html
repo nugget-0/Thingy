@@ -2277,20 +2277,6 @@ function drawBg(song, t, dt){
   g.addColorStop(0.45, hexA(song.color2, 0.14));
   g.addColorStop(1, 'rgba(9,10,26,0)');
   cx.fillStyle = g; cx.fillRect(0, 0, W, H);
-  if (game){
-    cx.save(); cx.globalCompositeOperation = 'lighter';
-    for (let i = 0; i < 4; i++){
-      const left = i < 2, sx = left ? W * (0.06 + i * 0.14) : W * (0.94 - (i - 2) * 0.14);
-      const ang = Math.sin(t * (0.45 + i * 0.12) + i * 1.7) * 0.32 + (left ? 0.3 : -0.3), len = H * 1.3, wd = 0.075;
-      const c1 = i % 2 ? song.color2 : song.color;
-      const gr = cx.createLinearGradient(sx, 0, sx + Math.sin(ang) * len, Math.cos(ang) * len);
-      gr.addColorStop(0, hexA(c1, 0.14 + 0.14 * pulse)); gr.addColorStop(1, hexA(c1, 0));
-      cx.fillStyle = gr; cx.beginPath(); cx.moveTo(sx, -10);
-      cx.lineTo(sx + Math.sin(ang - wd) * len, Math.cos(ang - wd) * len); cx.lineTo(sx + Math.sin(ang + wd) * len, Math.cos(ang + wd) * len);
-      cx.closePath(); cx.fill();
-    }
-    cx.restore();
-  }
   for (const p of bgParts){
     p.y -= p.v * dt; p.r += p.vr * dt;
     if (p.y < -0.05){ p.y = 1.05; p.x = Math.random(); }
