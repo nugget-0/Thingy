@@ -88,6 +88,9 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .song.cross{border-color:rgba(255,209,102,.45);background:linear-gradient(90deg,rgba(255,209,102,.12),rgba(255,255,255,.04))}
 .song.cross .st small{color:#ffd166;opacity:.9}
 .meta{flex-wrap:wrap}
+.song.boss.hype.smg{border-color:#ff3b00;background:repeating-linear-gradient(135deg,rgba(255,59,0,.2) 0 12px,rgba(255,230,0,.12) 12px 24px);animation:hypePulse .5s ease-in-out infinite}
+.song.boss.hype.smg .st b{color:#ffe600;letter-spacing:.2em}
+.song.boss.hype.smg.locked{animation:none;filter:grayscale(.85)}
 .song.boss.hype.omega{border-color:#fff;background:linear-gradient(90deg,rgba(255,45,45,.2),rgba(255,209,102,.12),rgba(125,255,179,.12),rgba(77,217,255,.18));animation:omegaPulse 1s linear infinite}
 .song.boss.hype.omega .st b{color:#fff;letter-spacing:.08em}
 @keyframes omegaPulse{0%{box-shadow:0 0 22px -4px #ff2d2d}33%{box-shadow:0 0 22px -4px #ffd166}66%{box-shadow:0 0 22px -4px #4dd9ff}100%{box-shadow:0 0 22px -4px #ff2d2d}}
@@ -198,7 +201,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
         <div class="opt"><span>Audio offset <kbd>[</kbd><kbd>]</kbd></span><button data-act="off-">◀</button><b id="oOffset"></b><button data-act="off+">▶</button></div>
         <div class="opt"><span>Auto play <kbd>A</kbd></span><button data-act="auto">◀</button><b id="oAuto"></b><button data-act="auto">▶</button></div>
       </div>
-      <button class="play" data-act="play">▶ PLAY</button>
+      <button class="play" data-act="play" id="playBtn">▶ PLAY</button>
     </div>
   </div>
   <div class="hints"><kbd>↑</kbd><kbd>↓</kbd> song &nbsp;·&nbsp; <kbd>←</kbd><kbd>→</kbd> difficulty &nbsp;·&nbsp; <kbd>Enter</kbd> play &nbsp;·&nbsp; <kbd>Esc</kbd> pause in game</div>
@@ -377,7 +380,9 @@ const SONGS = [
   { id:'prismbreaker', title:'PRISM BREAKER', artist:'Prism Stage Original', bpm:200, root:58, mode:'minor', prog:[0,5,6,4], seed:999, color:'#ff1f5a', color2:'#ffffff', levels:[5,12,20,28,33,'50','∞'], boss:true },
   { id:'terminal',    title:'TERMINAL VELOCITY',  artist:'Prism Stage Original', bpm:400, root:57, mode:'minor', prog:[5,3,6,0], seed:4000, color:'#00f0ff', color2:'#ff00aa', levels:[7,16,25,33,40,'60','∞'], hype:true, long:true },
   { id:'omega',       title:'OMEGA JUNCTION',     artist:'Prism Stage Original', bpm:360, root:55, mode:'minor', prog:[0,5,6,4], seed:7777, color:'#ffffff', color2:'#ff2d2d', levels:[8,18,27,35,43,'70','∞'], hype:true, long:true, cross:true, roads:5, omega:true },
+  { id:'smg',         title:'SMG',                artist:'Prism Stage Original', bpm:800, root:52, mode:'minor', prog:[0,6,5,4], seed:8008, color:'#ff3b00', color2:'#ffe600', levels:[10,22,34,45,55,'99','∞'], hype:true, long:true, unlockAfter:'terminal' },
 ];
+function songLocked(sg){ return !!(sg && sg.unlockAfter) && !store.get('clears', []).some(k => k.startsWith(sg.unlockAfter + '_')); }
 const BEGINNER_WIN = { perfect:0.07, great:0.13, good:0.19, bad:0.25 };
 const LEADIN = 2.2;
 // [light, mid, dark]
@@ -2044,6 +2049,7 @@ function startGame(lessonIdx, opts){
   lastLesson = lessonIdx;
   lastChartCtx = opts && opts.chart ? opts : null;
   initAudio();
+  if (!lastChartCtx && lessonIdx == null && songLocked(SONGS[sel.song])){ toast('🔒 Clear TERMINAL VELOCITY on any difficulty to unlock SMG'); return; }
   if (!lastChartCtx && lessonIdx == null && SONGS[sel.song].custom && !SONGS[sel.song].buffer){
     const sg = SONGS[sel.song];
     toast('🎧 Loading your song…');
@@ -2864,10 +2870,12 @@ function renderSelect(){
   document.documentElement.style.setProperty('--c', s.color);
   document.documentElement.style.setProperty('--c2', s.color2);
   $('songList').innerHTML = SONGS.map((x, i) =>
-    `<button class="song ${i === sel.song ? 'on' : ''} ${x.omega ? 'boss hype omega' : x.hype ? 'boss hype' : x.boss ? 'boss' : x.cross ? 'cross' : x.custom ? 'mine' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
-      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${x.omega ? 'Ω ALL ROADS · 5 roads · 3 MIN · ' : x.hype ? '⚡ 3 MIN MARATHON · ' : x.boss ? '★ FINAL BOSS · ' : x.cross ? '⇶ CROSSROADS · ' + x.roads + ' roads · ' : x.custom ? '🎵 YOUR MUSIC · ~' : ''}${x.bpm} BPM</small></span></button>`).join('');
+    `<button class="song ${i === sel.song ? 'on' : ''} ${x.id === 'smg' ? 'boss hype smg' + (songLocked(x) ? ' locked' : '') : x.omega ? 'boss hype omega' : x.hype ? 'boss hype' : x.boss ? 'boss' : x.cross ? 'cross' : x.custom ? 'mine' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
+      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${songLocked(x) ? '🔒 LOCKED · beat TERMINAL VELOCITY · ' : x.id === 'smg' ? '🔫 SECRET · ' : ''}${x.omega ? 'Ω ALL ROADS · 5 roads · 3 MIN · ' : x.hype ? '⚡ 3 MIN MARATHON · ' : x.boss ? '★ FINAL BOSS · ' : x.cross ? '⇶ CROSSROADS · ' + x.roads + ' roads · ' : x.custom ? '🎵 YOUR MUSIC · ~' : ''}${x.bpm} BPM</small></span></button>`).join('');
   $('songList').innerHTML += `<button class="song addmusic" data-act="addmusic">🎵 Add your own music <kbd style="margin-left:6px">M</kbd></button>`;
   { const on = document.querySelector('#songList .song.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' }); }
+  { const lk = songLocked(s), pb = $('playBtn');
+    pb.disabled = lk; pb.textContent = lk ? '🔒 Clear TERMINAL VELOCITY (any difficulty) to unlock' : '▶ PLAY'; }
   $('dTitle').textContent = s.title;
   $('dArtist').textContent = `${s.artist} · ${s.custom ? '~' : ''}${s.bpm} BPM`;
   { const un = unitOfSong(s.id);
@@ -2904,7 +2912,7 @@ function showResults(){
   const bestEl = $('rBest');
   if (!G.auto && !G.failed){
     const cl = store.get('clears', []), ck = G.song.id + '_' + G.diff;
-    if (!cl.includes(ck)){ cl.push(ck); store.set('clears', cl); if (CHAPTER_NEED.includes(cl.length)) setTimeout(() => toast('📖 New story chapters unlocked!'), 600); }
+    if (!cl.includes(ck)){ const wasLocked = songLocked(SONGS.find(x => x.id === 'smg')); cl.push(ck); store.set('clears', cl); if (wasLocked && G.song.id === 'terminal') setTimeout(() => toast('🔓 SMG UNLOCKED! (800 BPM)'), 1200); if (CHAPTER_NEED.includes(cl.length)) setTimeout(() => toast('📖 New story chapters unlocked!'), 600); }
   }
   if (!G.auto && !G.failed && (!prev || sc > prev.score)){
     store.set(key, { score: sc, rank, badge: ap ? 'AP' : fc ? 'FC' : '' });
