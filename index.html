@@ -98,7 +98,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 #toast.show{opacity:1;transform:translate(-50%,0)}
 /* song detail portrait */
 .dPortrait{float:right;width:92px;margin:-8px -6px 4px 10px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.45))}
-.dPortrait img{width:100%;height:auto;display:block;border-radius:12px}
+.dPortrait img{width:100%;aspect-ratio:3/4;object-fit:cover;object-position:top;display:block;border-radius:14px;border:2px solid rgba(255,255,255,.75)}
 .dUnit{margin-top:4px;font-weight:800;font-size:13px}
 .smallbtn{padding:4px 10px;border-radius:9px;background:rgba(255,80,110,.18);border:1px solid rgba(255,80,110,.5);font-size:12px;font-weight:800}
 .song.mine{border-style:dashed}
@@ -106,7 +106,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 /* story */
 .members{display:flex;gap:14px;margin:12px 0 4px}
 .member{flex:1;text-align:center;font-size:12.5px;opacity:.9}
-.member img{width:100%;max-width:140px;height:auto;filter:drop-shadow(0 8px 14px rgba(0,0,0,.4))}
+.member img{width:100%;max-width:140px;aspect-ratio:3/4;object-fit:cover;object-position:top;border-radius:16px;border:2px solid rgba(255,255,255,.7);filter:drop-shadow(0 8px 14px rgba(0,0,0,.4))}
 .member b{display:block;font-size:15px;opacity:1}
 .udesc{margin-top:8px;line-height:1.6;opacity:.85;font-size:14px}
 .chapters{display:flex;flex-direction:column;gap:8px;margin-top:14px}
@@ -117,7 +117,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .newTag{background:#ff5aa8;color:#fff;border-radius:999px;padding:2px 8px;font-size:11px;margin-left:6px;vertical-align:middle}
 #reader{justify-content:flex-end;padding:0 12px;cursor:pointer;background:linear-gradient(180deg,rgba(9,10,26,.2),rgba(9,10,26,.75))}
 .vnStage{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;gap:2vw;padding-bottom:150px;pointer-events:none}
-.vnStage img{height:min(56vh,430px);width:auto;max-width:45vw;object-fit:contain;transition:filter .25s,transform .25s;filter:brightness(.42) saturate(.55);transform:translateY(12px) scale(.95)}
+.vnStage img{height:min(52vh,400px);width:auto;max-width:42vw;object-fit:cover;border-radius:20px;border:3px solid rgba(255,255,255,.85);box-shadow:0 12px 30px rgba(0,0,0,.5);transition:filter .25s,transform .25s;filter:brightness(.42) saturate(.55);transform:translateY(12px) scale(.95)}
 .vnStage img.speaking{filter:drop-shadow(0 10px 24px rgba(0,0,0,.5));transform:none}
 .vnBox{position:relative;width:min(860px,100%);margin:0 auto 16px;padding:22px 24px 28px;border-radius:22px;background:rgba(12,14,34,.92);border:2px solid var(--vc,#fff);min-height:120px}
 .vnName{position:absolute;top:-16px;left:20px;padding:4px 16px;border-radius:999px;background:var(--vc,#fff);color:#0a0d1f;font-weight:900}
@@ -1225,14 +1225,14 @@ function backToMenu(){
 /* ================= CHARACTERS ================= */
 const CHARS = {
   prism:  { name:'Prism',          role:'Spirit of the Stage', img:'', color:'#ffe066' },
-  aoi:    { name:'Aoi Kurose',     role:'Guitar & vocals', img:'', color:'#4d9dff' },
+  aoi:    { name:'Aoi Kurose',     role:'Guitar & vocals', img:'https://i.postimg.cc/YCdp9htt/IMG-1590.jpg', color:'#4d9dff' },
   mika:   { name:'Mika Tendo',     role:'Drums', img:'', color:'#ff9a4d' },
-  hana:   { name:'Hana Sakuraba',  role:'Lead singer', img:'', color:'#ff7ab8' },
-  yuzu:   { name:'Yuzu Mori',      role:'Dance & harmony', img:'', color:'#ffd166' },
-  kai:    { name:'Kai Ishida',     role:'Rapper', img:'', color:'#a66bff' },
+  hana:   { name:'Hana Sakuraba',  role:'Lead singer', img:'https://i.postimg.cc/mDQJP57M/IMG-1591.jpg', color:'#ff7ab8' },
+  yuzu:   { name:'Yuzu Mori',      role:'Dance & harmony', img:'https://i.postimg.cc/5ysPvdym/IMG-1592.jpg', color:'#ffd166' },
+  kai:    { name:'Kai Ishida',     role:'Rapper', img:'https://i.postimg.cc/FRmGBsJk/IMG-1593.jpg', color:'#a66bff' },
   ren:    { name:'Ren Asahina',    role:'Beatbox & DJ', img:'', color:'#5ee89a' },
-  shiori: { name:'Shiori Kanzaki', role:'Composer', img:'', color:'#3fd6c6' },
-  noa:    { name:'Noa Fuyutsuki',  role:'Lyrics & mixing', img:'', color:'#b9b2ff' },
+  shiori: { name:'Shiori Kanzaki', role:'Composer', img:'https://i.postimg.cc/PqHmtVfR/IMG-1594.jpg', color:'#3fd6c6' },
+  noa:    { name:'Noa Fuyutsuki',  role:'Lyrics & mixing', img:'https://i.postimg.cc/L8KPTQPD/IMG-1595.jpg', color:'#b9b2ff' },
 };
 
 // Character pictures: put a direct image link in a character's `img` (e.g. https://i.postimg.cc/.../aoi.png).
