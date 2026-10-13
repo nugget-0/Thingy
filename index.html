@@ -93,6 +93,34 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 @keyframes bossPulse{50%{box-shadow:0 0 26px -4px #ff1f5a}}
 #toast{position:fixed;left:50%;bottom:18px;transform:translate(-50%,30px);opacity:0;z-index:20;padding:10px 18px;border-radius:999px;background:rgba(12,14,34,.92);border:1px solid rgba(255,255,255,.2);font-weight:800;font-size:14px;transition:.3s;pointer-events:none}
 #toast.show{opacity:1;transform:translate(-50%,0)}
+/* song detail portrait */
+.dPortrait{float:right;width:92px;margin:-8px -6px 4px 10px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.45))}
+.dPortrait svg{width:100%;height:auto;display:block}
+.dUnit{margin-top:4px;font-weight:800;font-size:13px}
+.smallbtn{padding:4px 10px;border-radius:9px;background:rgba(255,80,110,.18);border:1px solid rgba(255,80,110,.5);font-size:12px;font-weight:800}
+.song.mine{border-style:dashed}
+.song.addmusic{justify-content:center;font-weight:900;border-style:dashed;background:rgba(125,255,179,.08);border-color:rgba(125,255,179,.45)}
+/* story */
+.members{display:flex;gap:14px;margin:12px 0 4px}
+.member{flex:1;text-align:center;font-size:12.5px;opacity:.9}
+.member svg{width:100%;max-width:140px;height:auto;filter:drop-shadow(0 8px 14px rgba(0,0,0,.4))}
+.member b{display:block;font-size:15px;opacity:1}
+.udesc{margin-top:8px;line-height:1.6;opacity:.85;font-size:14px}
+.chapters{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.chap{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;border-radius:14px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.12);font-weight:800;text-align:left}
+.chap.on{border-color:var(--c);background:rgba(255,255,255,.14)}
+.chap.locked{opacity:.45}
+.chap small{opacity:.7;font-weight:500;white-space:nowrap}
+.newTag{background:#ff5aa8;color:#fff;border-radius:999px;padding:2px 8px;font-size:11px;margin-left:6px;vertical-align:middle}
+#reader{justify-content:flex-end;padding:0 12px;cursor:pointer;background:linear-gradient(180deg,rgba(9,10,26,.2),rgba(9,10,26,.75))}
+.vnStage{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;gap:2vw;padding-bottom:150px;pointer-events:none}
+.vnStage svg{height:min(56vh,430px);width:auto;transition:filter .25s,transform .25s;filter:brightness(.42) saturate(.55);transform:translateY(12px) scale(.95)}
+.vnStage svg.speaking{filter:drop-shadow(0 10px 24px rgba(0,0,0,.5));transform:none}
+.vnBox{position:relative;width:min(860px,100%);margin:0 auto 16px;padding:22px 24px 28px;border-radius:22px;background:rgba(12,14,34,.92);border:2px solid var(--vc,#fff);min-height:120px}
+.vnName{position:absolute;top:-16px;left:20px;padding:4px 16px;border-radius:999px;background:var(--vc,#fff);color:#0a0d1f;font-weight:900}
+.vnText{font-size:clamp(16px,2.4vw,20px);line-height:1.6;margin-top:4px;min-height:2em}
+.vnHint{position:absolute;right:18px;bottom:8px;font-size:12px;opacity:.55}
+.vnTitle{position:absolute;top:16px;left:50%;transform:translateX(-50%);font-weight:900;letter-spacing:.15em;font-size:13px;opacity:.75;white-space:nowrap}
 #pauseBtn{position:fixed;top:12px;right:12px;z-index:4;width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);font-weight:900;display:none;font-family:'Outfit'}
 
 @media (max-width:720px){
@@ -114,6 +142,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
   <div class="tag">colorful rhythm game · prototype</div>
   <div class="pill">Press <kbd>Enter</kbd> or tap to start</div>
   <button class="pill pill2" data-act="lessons">📘 New here? Lessons <kbd>L</kbd></button>
+  <button class="pill pill2" data-act="story" style="background:rgba(255,111,191,.12);border-color:rgba(255,111,191,.5)">📖 Story <kbd>S</kbd></button>
   <div class="howto">
     <div>Play with <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> &nbsp; <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> &nbsp;or tap the lanes</div>
     <div class="legend"><span class="n tap"></span>Tap<span class="n hold"></span>Hold<span class="n flick"></span>Flick (swipe up on touch)<span class="n crit"></span>Critical</div>
@@ -122,11 +151,13 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 
 <div id="select" class="screen">
   <div class="selwrap">
-    <div class="head">SONG SELECT <button data-act="back">◀ Title</button><button data-act="lessons">📘 Lessons</button></div>
+    <div class="head">SONG SELECT <button data-act="back">◀ Title</button><button data-act="lessons">📘 Lessons</button><button data-act="story">📖 Story</button></div>
     <div class="songlist" id="songList"></div>
     <div class="detail">
+      <div class="dPortrait" id="dPortrait"></div>
       <div class="dTitle" id="dTitle"></div>
       <div class="dArtist" id="dArtist"></div>
+      <div class="dUnit" id="dUnit"></div>
       <div class="diffs" id="diffs"></div>
       <div class="meta" id="meta"></div>
       <div class="opts">
@@ -154,6 +185,23 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
   </div>
   <div class="hints"><kbd>↑</kbd><kbd>↓</kbd> lesson &nbsp;·&nbsp; <kbd>Enter</kbd> start &nbsp;·&nbsp; <kbd>Esc</kbd> back</div>
 </div>
+
+<div id="story" class="screen">
+  <div class="selwrap">
+    <div class="head">STORY <button data-act="back">◀ Title</button><button data-act="start">Songs ▶</button></div>
+    <div class="songlist" id="unitList"></div>
+    <div class="detail" id="unitDetail"></div>
+  </div>
+  <div class="hints"><kbd>↑</kbd><kbd>↓</kbd> group &nbsp;·&nbsp; <kbd>←</kbd><kbd>→</kbd> chapter &nbsp;·&nbsp; <kbd>Enter</kbd> read &nbsp;·&nbsp; clear songs to unlock chapters</div>
+</div>
+
+<div id="reader" class="screen" data-act="vnnext">
+  <div class="vnTitle" id="vnTitle"></div>
+  <div class="vnStage" id="vnStage"></div>
+  <div class="vnBox"><div class="vnName" id="vnName"></div><div class="vnText" id="vnText"></div><div class="vnHint">Enter / tap ▶ &nbsp;·&nbsp; Esc skip</div></div>
+</div>
+
+<input type="file" id="fileIn" accept="audio/*" hidden>
 
 <div id="pause" class="screen">
   <div class="panel">
@@ -706,11 +754,13 @@ function buildChart(G, level){
 const genCache = {};
 // INSANE plays the whole song at 50x the BPM
 function getGen(i, d){
+  if (SONGS[i].custom){ const k = 'c' + SONGS[i].id; return genCache[k] || (genCache[k] = makeCustomGen(SONGS[i])); }
   if (d === INSANE){ const k = i + 'x' + INSANE_MULT; return genCache[k] || (genCache[k] = generateSong({ ...SONGS[i], bpm: SONGS[i].bpm * INSANE_MULT })); }
   return genCache[i] || (genCache[i] = generateSong(SONGS[i]));
 }
 function getChart(i, d){
   const g = getGen(i, d), song = SONGS[i];
+  if (song.custom){ const lv = Math.min(d, 5); return g.charts[lv] || (g.charts[lv] = buildCustomChart(g, lv)); }
   if (g.charts[d]) return g.charts[d];
   const saved = LANES;
   setLayout(6);
@@ -1009,6 +1059,463 @@ function backToMenu(){
   if (lastLesson != null) showLessons(); else { showScreen('select'); renderSelect(); }
 }
 
+/* ================= CHARACTERS ================= */
+const CHARS = {
+  prism:  { name:'Prism',          role:'Spirit of the Stage', color:'#ffe066' },
+  aoi:    { name:'Aoi Kurose',     role:'Guitar & vocals',   hair:'#1f3c88', hair2:'#3d6fe0', eye:'#3aa0ff', skin:'#ffe0cc', shirt:'#20263a', acc:'clip',    style:'short', color:'#4d9dff' },
+  mika:   { name:'Mika Tendo',     role:'Drums',             hair:'#c9541f', hair2:'#ff9a4d', eye:'#ff8a3d', skin:'#f9d3b5', shirt:'#f2f2f2', acc:'band',    style:'pony',  color:'#ff9a4d' },
+  hana:   { name:'Hana Sakuraba',  role:'Lead singer',       hair:'#f27aae', hair2:'#ffc6de', eye:'#ff5aa8', skin:'#ffe4d6', shirt:'#ffe3f0', acc:'star',    style:'twin',  color:'#ff7ab8' },
+  yuzu:   { name:'Yuzu Mori',      role:'Dance & harmony',   hair:'#e0aa2e', hair2:'#ffe08a', eye:'#f0a000', skin:'#ffe0c8', shirt:'#fff3c4', acc:'bow',     style:'bob',   color:'#ffd166' },
+  kai:    { name:'Kai Ishida',     role:'Rapper',            hair:'#2b2140', hair2:'#5a3fa0', eye:'#b38bff', skin:'#e9b896', shirt:'#2a2a2a', acc:'cap',     style:'short', color:'#a66bff' },
+  ren:    { name:'Ren Asahina',    role:'Beatbox & DJ',      hair:'#2f9e6a', hair2:'#7dffb3', eye:'#3fd68a', skin:'#f3c9a8', shirt:'#1b3b2e', acc:'phones',  style:'messy', color:'#5ee89a' },
+  shiori: { name:'Shiori Kanzaki', role:'Composer',          hair:'#174f4d', hair2:'#2fa59f', eye:'#3fd6c6', skin:'#fde4d4', shirt:'#1a1f2e', acc:'glasses', style:'long',  color:'#3fd6c6' },
+  noa:    { name:'Noa Fuyutsuki',  role:'Lyrics & mixing',   hair:'#b9b2f0', hair2:'#ffffff', eye:'#8f7dff', skin:'#fdebe0', shirt:'#2d2850', acc:'phones',  style:'bob',   color:'#b9b2ff' },
+};
+
+// Hand-drawn (in code) character portraits. face: neutral | smile | open | wink | sad
+function portrait(cid, face = 'neutral', cls = ''){
+  const id = 'p' + cid + Math.random().toString(36).slice(2, 8);
+  if (cid === 'prism') return prismSVG(face, cls, id);
+  const c = CHARS[cid], H = `url(#${id})`, ink = '#2a2030';
+  let back = '';
+  if (c.style === 'long') back = `<path d="M46 100 Q40 38 100 34 Q160 38 154 100 L162 218 Q100 232 38 218Z" fill="${H}"/>`;
+  else if (c.style === 'twin') back = `<ellipse cx="36" cy="150" rx="20" ry="60" fill="${H}"/><ellipse cx="164" cy="150" rx="20" ry="60" fill="${H}"/>`;
+  else if (c.style === 'pony') back = `<path d="M138 66 Q192 86 180 168 Q172 202 150 206 Q166 150 138 108Z" fill="${H}"/>`;
+  else if (c.style === 'bob') back = `<path d="M48 100 Q44 42 100 38 Q156 42 152 100 L156 152 Q130 162 100 160 Q70 162 44 152Z" fill="${H}"/>`;
+  const body = `<rect x="88" y="146" width="24" height="40" rx="9" fill="${c.skin}"/><rect x="88" y="146" width="24" height="40" rx="9" fill="rgba(120,60,40,.12)"/>
+    <path d="M16 240 Q24 184 100 178 Q176 184 184 240Z" fill="${c.shirt}"/><path d="M78 181 L100 206 L122 181" fill="none" stroke="${c.color}" stroke-width="5" stroke-linejoin="round"/>`;
+  const head = `<ellipse cx="100" cy="112" rx="47" ry="52" fill="${c.skin}"/>`;
+  const openEye = x => `<ellipse cx="${x}" cy="117" rx="9.5" ry="12.5" fill="${c.eye}"/><ellipse cx="${x}" cy="120" rx="5.5" ry="7.5" fill="rgba(20,10,30,.6)"/><circle cx="${x - 3}" cy="111" r="3.6" fill="#fff"/><circle cx="${x + 3}" cy="123" r="1.6" fill="#fff"/><path d="M${x - 11} 106 Q${x} 99 ${x + 11} 106" stroke="${ink}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  const shutEye = x => `<path d="M${x - 10} 118 Q${x} 106 ${x + 10} 118" stroke="${ink}" stroke-width="3.6" fill="none" stroke-linecap="round"/>`;
+  let eyes = face === 'smile' ? shutEye(80) + shutEye(120) : face === 'wink' ? openEye(80) + shutEye(120) : openEye(80) + openEye(120);
+  if (face === 'sad') eyes += `<path d="M70 99 L89 94 M130 99 L111 94" stroke="${ink}" stroke-width="3" stroke-linecap="round"/>`;
+  const mouth = {
+    smile: `<path d="M87 139 Q100 152 113 139" stroke="#8a3b4a" stroke-width="3.6" fill="none" stroke-linecap="round"/>`,
+    wink:  `<path d="M88 139 Q100 151 112 139" stroke="#8a3b4a" stroke-width="3.6" fill="none" stroke-linecap="round"/>`,
+    open:  `<ellipse cx="100" cy="143" rx="8.5" ry="7.5" fill="#8a3b4a"/><ellipse cx="100" cy="147" rx="5" ry="3" fill="#ff8fa3"/>`,
+    sad:   `<path d="M90 147 Q100 139 110 147" stroke="#8a3b4a" stroke-width="3.4" fill="none" stroke-linecap="round"/>`,
+    neutral: `<path d="M93 143 L107 143" stroke="#8a3b4a" stroke-width="3.4" stroke-linecap="round"/>`,
+  }[face] || '';
+  const blush = `<ellipse cx="72" cy="134" rx="9" ry="5" fill="#ff7a9a" opacity="${face === 'sad' ? .15 : .35}"/><ellipse cx="128" cy="134" rx="9" ry="5" fill="#ff7a9a" opacity="${face === 'sad' ? .15 : .35}"/>`;
+  const bangs = c.style === 'messy'
+    ? `<path d="M50 108 Q44 44 100 40 Q156 44 150 108 L141 80 L132 101 L121 73 L109 97 L99 69 L89 97 L77 73 L67 101 L58 80Z" fill="${H}"/>`
+    : `<path d="M51 108 Q46 44 100 40 Q154 44 149 108 Q142 78 124 84 Q112 63 100 86 Q88 63 76 84 Q60 80 51 108Z" fill="${H}"/>`;
+  const locks = (c.style === 'bob' || c.style === 'long' || c.style === 'twin') ? `<path d="M52 98 Q45 132 57 154 L65 108Z M148 98 Q155 132 143 154 L135 108Z" fill="${H}"/>` : '';
+  const acc = {
+    clip:    `<rect x="126" y="60" width="20" height="7" rx="3.5" fill="#ffd23f" transform="rotate(-25 136 64)"/><rect x="122" y="70" width="16" height="6" rx="3" fill="#ffffff" transform="rotate(-25 130 73)"/>`,
+    band:    `<path d="M52 84 Q100 50 148 84" stroke="#ffffff" stroke-width="8" fill="none" stroke-linecap="round"/>`,
+    star:    `<path d="M142 50 L147 61 L159 62 L150 70 L153 82 L142 75 L131 82 L134 70 L125 62 L137 61Z" fill="#ffe066" stroke="#fff" stroke-width="2"/>`,
+    bow:     `<path d="M60 58 L42 47 L42 71Z M60 58 L78 47 L78 71Z" fill="#ff5a7a"/><circle cx="60" cy="58" r="6" fill="#ff8fa3"/>`,
+    cap:     `<path d="M50 86 Q50 30 100 28 Q150 30 150 86Z" fill="#26222e"/><path d="M42 86 Q100 70 172 90 L168 99 Q100 84 46 95Z" fill="#141218"/><circle cx="100" cy="58" r="10" fill="${c.color}"/>`,
+    phones:  `<path d="M44 114 Q42 32 100 30 Q158 32 156 114" stroke="#2b2b33" stroke-width="8" fill="none"/><rect x="32" y="100" width="20" height="32" rx="9" fill="${c.hair2}" stroke="#2b2b33" stroke-width="3"/><rect x="148" y="100" width="20" height="32" rx="9" fill="${c.hair2}" stroke="#2b2b33" stroke-width="3"/>`,
+    glasses: `<rect x="65" y="104" width="30" height="23" rx="9" fill="rgba(200,230,255,.16)" stroke="${ink}" stroke-width="3"/><rect x="105" y="104" width="30" height="23" rx="9" fill="rgba(200,230,255,.16)" stroke="${ink}" stroke-width="3"/><path d="M95 114 L105 114" stroke="${ink}" stroke-width="3"/>`,
+  }[c.acc] || '';
+  return `<svg viewBox="0 0 200 240" class="${cls}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.hair2}"/><stop offset="1" stop-color="${c.hair}"/></linearGradient></defs>${back}${body}${head}${eyes}${mouth}${blush}${bangs}${locks}${acc}</svg>`;
+}
+function prismSVG(face, cls, id){
+  const ink = '#2a2030';
+  const eye = x => face === 'smile' ? `<path d="M${x - 9} 124 Q${x} 113 ${x + 9} 124" stroke="${ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`
+    : face === 'wink' && x > 100 ? `<path d="M${x - 9} 124 Q${x} 113 ${x + 9} 124" stroke="${ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`
+    : `<ellipse cx="${x}" cy="120" rx="7" ry="10" fill="${ink}"/><circle cx="${x - 2}" cy="115" r="3" fill="#fff"/>`;
+  const mouth = face === 'open' ? `<ellipse cx="100" cy="146" rx="7" ry="6" fill="${ink}"/>` : face === 'sad' ? `<path d="M91 150 Q100 142 109 150" stroke="${ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>` : `<path d="M90 142 Q100 152 110 142" stroke="${ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  const spark = (x, y, r) => `<path d="M${x} ${y - r} Q${x} ${y} ${x + r} ${y} Q${x} ${y} ${x} ${y + r} Q${x} ${y} ${x - r} ${y} Q${x} ${y} ${x} ${y - r}Z" fill="#fff"/>`;
+  return `<svg viewBox="0 0 200 240" class="${cls}" xmlns="http://www.w3.org/2000/svg"><defs>
+    <linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8bd8"/><stop offset=".5" stop-color="#ffe066"/><stop offset="1" stop-color="#7ef0ff"/></linearGradient>
+    <radialGradient id="${id}g"><stop offset="0" stop-color="rgba(255,255,255,.55)"/><stop offset="1" stop-color="rgba(255,255,255,0)"/></radialGradient></defs>
+    <circle cx="100" cy="128" r="96" fill="url(#${id}g)"/>
+    <polygon points="100,34 166,128 100,222 34,128" fill="url(#${id})" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
+    <polygon points="100,52 150,128 100,128" fill="rgba(255,255,255,.35)"/>
+    ${eye(82)}${eye(118)}${mouth}
+    <ellipse cx="72" cy="140" rx="8" ry="4.5" fill="#ff7a9a" opacity=".45"/><ellipse cx="128" cy="140" rx="8" ry="4.5" fill="#ff7a9a" opacity=".45"/>
+    ${spark(170, 50, 12)}${spark(30, 70, 9)}${spark(176, 190, 8)}</svg>`;
+}
+
+/* ================= STORY ================= */
+const L_ = (who, face, text) => ({ who, face, text });
+const UNITS = [
+  { id:'stage', name:'Prologue', color:'#ffe066', members:['prism'],
+    desc:'Something is wrong with the Prism Stage. Its spirit needs your help.',
+    chapters:[
+      { title:'Welcome to the Stage', lines:[
+        L_('prism','open','Oh! A new visitor! Welcome to the Prism Stage ✨'),
+        L_('prism','smile','I\'m Prism, the spirit who lives inside every song played here.'),
+        L_('prism','neutral','Every time someone plays music from the heart, a little more light gets added to this stage.'),
+        L_('prism','sad','But lately it\'s been… kinda dim. Four groups out there have lost their spark.'),
+        L_('prism','open','You\'ve got rhythm, right? Play their songs, and maybe you can help them find it again!'),
+        L_('prism','wink','Clear songs to unlock more of their stories. Let\'s go!'),
+      ]},
+    ]},
+  { id:'starfall', name:'Starfall Signal', color:'#4d9dff', members:['aoi','mika'],
+    desc:'A two-person garage band that practices on the school rooftop, chasing a sound loud enough to reach the stars.',
+    chapters:[
+      { title:'Rooftop Noise', lines:[
+        L_('mika','open','Aoi! The rooftop door was unlocked again. Practice?'),
+        L_('aoi','neutral','…We only have two members. A band needs at least three.'),
+        L_('mika','smile','Then we\'ll just be loud enough for three!'),
+        L_('aoi','sad','Last time the teachers called us "noise pollution."'),
+        L_('mika','wink','Noise is just music people haven\'t learned to love yet.'),
+        L_('aoi','smile','…Fine. One song. Count us in.'),
+      ]},
+      { title:'The Missing Third', lines:[
+        L_('aoi','neutral','I put up a poster. "Bassist wanted." Nobody came.'),
+        L_('mika','open','Someone came! …To ask us to turn it down.'),
+        L_('aoi','sad','Maybe it\'s me. My songs are too much.'),
+        L_('mika','neutral','Aoi. Your songs are the reason I picked up drumsticks in the first place.'),
+        L_('aoi','open','…Really?'),
+        L_('mika','smile','Really. Now play the loud one. The one that sounds like falling stars.'),
+      ]},
+      { title:'Signal Received', lines:[
+        L_('aoi','open','Mika… look at the people by the fence. They stayed for the whole set.'),
+        L_('mika','smile','Told you! We just had to keep sending the signal.'),
+        L_('aoi','smile','Then let\'s name the band after it. Starfall Signal.'),
+        L_('mika','wink','That\'s been our name for months. You just finally said it out loud.'),
+        L_('aoi','smile','…Shut up and count us in.'),
+        L_('prism','smile','✨ The rooftop shines a little brighter tonight.'),
+      ]},
+    ]},
+  { id:'petal', name:'Petal Parade', color:'#ff7ab8', members:['hana','yuzu'],
+    desc:'A tiny idol duo who perform at shopping-street festivals and dream of a real stage someday.',
+    chapters:[
+      { title:'Shopping Street Stage', lines:[
+        L_('hana','open','Yuzu! The festival committee said yes! We get the stage next to the fish market!'),
+        L_('yuzu','sad','…Next to the fish market?'),
+        L_('hana','smile','A stage is a stage! Idols shine anywhere!'),
+        L_('yuzu','neutral','Our costumes are made out of curtains, Hana.'),
+        L_('hana','wink','Very sparkly curtains.'),
+        L_('yuzu','smile','…Okay. Let\'s make the fish jealous.'),
+      ]},
+      { title:'Stage Fright', lines:[
+        L_('yuzu','neutral','Hana? You\'ve been staring at the crowd for five minutes.'),
+        L_('hana','sad','There are so many people… what if my voice cracks?'),
+        L_('yuzu','open','Then I\'ll harmonize with the crack. It\'ll sound like we meant it.'),
+        L_('hana','open','You\'d really do that?'),
+        L_('yuzu','smile','We\'re a duo. Half your mistakes are mine anyway.'),
+        L_('hana','smile','…Then let\'s make some really cute mistakes!'),
+      ]},
+      { title:'Bloom', lines:[
+        L_('hana','open','Yuzu, they\'re chanting our name! PETAL PARADE!'),
+        L_('yuzu','smile','Even the fishmonger is waving a glowstick.'),
+        L_('hana','smile','Next year, a real concert hall!'),
+        L_('yuzu','wink','Next week, maybe a stage that doesn\'t smell like tuna.'),
+        L_('hana','smile','Step by step. Petal by petal!'),
+        L_('prism','smile','✨ Something is blooming on the Prism Stage.'),
+      ]},
+    ]},
+  { id:'concrete', name:'Concrete Choir', color:'#a66bff', members:['kai','ren'],
+    desc:'Street performers who turn skate parks and underpasses into concert halls, one echo at a time.',
+    chapters:[
+      { title:'Underpass Acoustics', lines:[
+        L_('ren','open','Kai, listen. *clap* Hear that echo? This underpass is basically a cathedral.'),
+        L_('kai','neutral','It\'s a tunnel, Ren. It smells like rain and bus exhaust.'),
+        L_('ren','smile','Exactly. Free reverb.'),
+        L_('kai','neutral','Fine. Give me a beat. I\'ve got verses I\'ve never said out loud.'),
+        L_('ren','wink','Boots and cats and boots and— okay, okay, a real one.'),
+        L_('kai','smile','Let\'s turn this tunnel into a choir.'),
+      ]},
+      { title:'Moved Along', lines:[
+        L_('kai','sad','Security kicked us out of the skate park again.'),
+        L_('ren','neutral','Third spot this week. Feels like the city doesn\'t want us anywhere.'),
+        L_('kai','open','Then we go everywhere. One song per spot. A tour of the whole city.'),
+        L_('ren','open','A secret concert tour…'),
+        L_('kai','smile','Concrete is everywhere. So\'s our stage.'),
+        L_('ren','smile','I\'ll map the route. Best echoes first.'),
+      ]},
+      { title:'Everyone Sings', lines:[
+        L_('ren','open','Kai… people followed us from the last spot. There\'s like forty of them.'),
+        L_('kai','open','They know the chorus. They\'re singing it back.'),
+        L_('ren','smile','That\'s not a duo anymore. That\'s a choir.'),
+        L_('kai','smile','Concrete Choir. Yeah. That fits.'),
+        L_('ren','wink','Free reverb AND a free choir. Best deal in the city.'),
+        L_('prism','smile','✨ The whole city is humming along.'),
+      ]},
+    ]},
+  { id:'archive', name:'Midnight Archive', color:'#3fd6c6', members:['shiori','noa'],
+    desc:'Two anonymous online composers who have only ever talked in voice chat, always at 2 a.m.',
+    chapters:[
+      { title:'2 A.M. Voice Chat', lines:[
+        L_('noa','neutral','…you\'re online again. it\'s 2 a.m.'),
+        L_('shiori','neutral','So are you. I finished the instrumental. Sending it now.'),
+        L_('noa','open','oh. oh this is good. the piano at 1:12 sounds like rain on a window.'),
+        L_('shiori','smile','That\'s exactly what it is. I recorded the rain on my window.'),
+        L_('noa','smile','…i\'ll write words for it. give me until sunrise.'),
+      ]},
+      { title:'Faces', lines:[
+        L_('shiori','sad','Someone in the comments asked who we are. Should we show our faces?'),
+        L_('noa','sad','…i don\'t know if i\'m brave enough for that.'),
+        L_('shiori','neutral','We don\'t have to. The songs can be our faces.'),
+        L_('noa','open','but i want to meet you. for real. just once.'),
+        L_('shiori','open','…There\'s a 24-hour café near the station.'),
+        L_('noa','smile','it\'s a date. i mean. a meeting. a band meeting.'),
+      ]},
+      { title:'The Archive Opens', lines:[
+        L_('noa','open','you\'re… taller than your voice.'),
+        L_('shiori','smile','And you\'re exactly as quiet as your typing.'),
+        L_('noa','neutral','should we stay anonymous online?'),
+        L_('shiori','neutral','Online, yes. But tonight, let\'s play one song live. Just for the café.'),
+        L_('noa','smile','the midnight archive, open for one night only.'),
+        L_('prism','smile','✨ Four sparks, shining again. Thank you for playing!'),
+      ]},
+    ]},
+];
+const CHAPTER_NEED = [0, 3, 8];   // distinct cleared charts needed for chapter 1 / 2 / 3
+const UNIT_SONGS = {
+  stage:    ['firststeps','pillowfort','catcafe','prismbreaker'],
+  starfall: ['neon','rooftop','overclock','thunder','crimson','midnighttrain'],
+  petal:    ['lantern','candy','festival','arcadeheart','supernova','bicycle'],
+  concrete: ['afterglow','zerog','quantum','comet','crossroads','junction','interchange','spaghetti'],
+  archive:  ['moonlit','rainy','glassgarden','hyperdrive','horizon','singularity','absolutezero','starlight'],
+};
+function unitOfSong(id){ return UNITS.find(u => (UNIT_SONGS[u.id] || []).includes(id)) || null; }
+function clearsCount(){ return store.get('clears', []).length; }
+function chapterUnlocked(u, c){ return u.id === 'stage' || clearsCount() >= CHAPTER_NEED[c]; }
+function chapterRead(u, c){ return store.get('story_read', []).includes(u.id + ':' + c); }
+
+let storySel = { unit: 0, ch: 0 };
+function showStory(){ initAudio(); showScreen('story'); renderStory(); sfx('blip'); }
+function renderStory(){
+  $('unitList').innerHTML = UNITS.map((u, i) => {
+    const total = u.chapters.length, read = u.chapters.filter((_, c) => chapterRead(u, c)).length;
+    const fresh = u.chapters.some((_, c) => chapterUnlocked(u, c) && !chapterRead(u, c));
+    return `<button class="song ${i === storySel.unit ? 'on' : ''}" data-unit="${i}" style="--sc:${u.color};--sc2:${CHARS[u.members[u.members.length - 1]].color}">
+      <span class="lnum" style="font-size:16px">${portraitMini(u.members[0])}</span><span class="st"><b>${u.name}</b><small>${read}/${total} read${fresh ? '<span class="newTag">NEW</span>' : ''}</small></span></button>`;
+  }).join('');
+  const u = UNITS[storySel.unit];
+  storySel.ch = clamp(storySel.ch, 0, u.chapters.length - 1);
+  document.documentElement.style.setProperty('--c', u.color);
+  $('unitDetail').innerHTML = `<div class="dTitle">${u.name}</div><div class="udesc">${u.desc}</div>
+    <div class="members">${u.members.map(m => `<div class="member">${portrait(m, 'smile')}<b style="color:${CHARS[m].color}">${CHARS[m].name}</b>${CHARS[m].role}</div>`).join('')}</div>
+    <div class="chapters">${u.chapters.map((ch, c) => {
+      const open = chapterUnlocked(u, c), read = chapterRead(u, c);
+      return `<button class="chap ${c === storySel.ch ? 'on' : ''} ${open ? '' : 'locked'}" data-chapter="${c}">
+        <span>${u.id === 'stage' ? '' : 'Ch. ' + (c + 1) + ' · '}${ch.title}${open && !read ? '<span class="newTag">NEW</span>' : ''}</span>
+        <small>${open ? (read ? '✓ Read' : '▶ Read') : `🔒 Clear ${CHAPTER_NEED[c]} charts (${clearsCount()}/${CHAPTER_NEED[c]})`}</small></button>`;
+    }).join('')}</div>`;
+  const on = document.querySelector('#unitList .song.on');
+  if (on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' });
+}
+function portraitMini(cid){ return `<span style="display:block;width:46px;height:46px;overflow:hidden;border-radius:12px">${portrait(cid, 'smile').replace('<svg ', '<svg style="width:60px;margin:-4px 0 0 -7px" ')}</span>`; }
+
+let reader = null;
+function openChapter(ui, c){
+  const u = UNITS[ui];
+  if (!chapterUnlocked(u, c)) { toast(`🔒 Clear ${CHAPTER_NEED[c]} charts to unlock this chapter`); return; }
+  const ch = u.chapters[c];
+  const cast = [...new Set(ch.lines.map(l => l.who))];
+  reader = { u, c, ch, cast, i: 0, shown: 0, timer: null };
+  $('vnTitle').textContent = `${u.name.toUpperCase()} · ${ch.title.toUpperCase()}`;
+  showScreen('reader');
+  showLine();
+}
+function showLine(){
+  const r = reader, line = r.ch.lines[r.i], who = CHARS[line.who];
+  $('vnStage').innerHTML = r.cast.map(cid => portrait(cid, cid === line.who ? line.face : 'neutral', cid === line.who ? 'speaking' : '')).join('');
+  $('vnName').textContent = who.name;
+  document.documentElement.style.setProperty('--vc', who.color);
+  clearInterval(r.timer);
+  r.shown = 0;
+  const el = $('vnText'), text = line.text;
+  el.textContent = '';
+  r.timer = setInterval(() => {
+    r.shown += 1;
+    el.textContent = text.slice(0, r.shown);
+    if (r.shown >= text.length) { clearInterval(r.timer); r.timer = null; }
+  }, 22);
+  sfx('blip');
+}
+function vnNext(){
+  const r = reader; if (!r) return;
+  const line = r.ch.lines[r.i];
+  if (r.timer){ clearInterval(r.timer); r.timer = null; $('vnText').textContent = line.text; return; }
+  r.i++;
+  if (r.i >= r.ch.lines.length) return closeChapter(true);
+  showLine();
+}
+function closeChapter(done){
+  const r = reader; if (!r) return;
+  clearInterval(r.timer);
+  if (done){
+    const k = r.u.id + ':' + r.c, read = store.get('story_read', []);
+    if (!read.includes(k)){ read.push(k); store.set('story_read', read); }
+  }
+  reader = null;
+  showStory();
+}
+
+/* ================= YOUR OWN MUSIC =================
+   Pick an audio file → we split it into bass / mid / treble, find where the sound suddenly gets louder
+   (drum hits, notes, bass), estimate the BPM, and build charts for every difficulty from those moments. */
+const IDB = {
+  db: null,
+  open(){ return this.db || (this.db = new Promise((res, rej) => {
+    const r = indexedDB.open('prismstage', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('songs', { keyPath: 'id' });
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  })); },
+  async tx(mode, fn){ const db = await this.open(); return new Promise((res, rej) => { const t = db.transaction('songs', mode); const q = fn(t.objectStore('songs')); t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); }); },
+  all(){ return this.tx('readonly', st => st.getAll()); },
+  put(v){ return this.tx('readwrite', st => st.put(v)); },
+  del(id){ return this.tx('readwrite', st => st.delete(id)); },
+};
+
+async function analyzeBuffer(buf){
+  const sr = 22050, len = Math.max(1, Math.ceil(buf.duration * sr));
+  const off = new OfflineAudioContext(3, len, sr);
+  const src = off.createBufferSource(); src.buffer = buf;
+  const merger = off.createChannelMerger(3);
+  const mk = (type, f, q) => { const b = off.createBiquadFilter(); b.type = type; b.frequency.value = f; if (q) b.Q.value = q; return b; };
+  const lp = mk('lowpass', 180), bp = mk('bandpass', 1200, 0.8), hp = mk('highpass', 5000);
+  src.connect(lp); src.connect(bp); src.connect(hp);
+  lp.connect(merger, 0, 0); bp.connect(merger, 0, 1); hp.connect(merger, 0, 2);
+  merger.connect(off.destination);
+  src.start();
+  const out = await off.startRendering();
+  const hop = 256, hopSec = hop / sr, F = Math.floor(len / hop);
+  // loudness per band per frame (log-compressed)
+  const E = [0, 1, 2].map(ch => {
+    const d = out.getChannelData(ch), e = new Float32Array(F);
+    for (let i = 0; i < F; i++){ let sum = 0; const o = i * hop; for (let k = 0; k < hop; k++){ const v = d[o + k]; sum += v * v; } e[i] = sum; }
+    let m = 0; for (let i = 0; i < F; i++) m += e[i]; m = m / F + 1e-12;
+    for (let i = 0; i < F; i++) e[i] = Math.log(1 + 20 * e[i] / m);
+    return e;
+  });
+  // "how much louder did it just get" per band
+  const Wt = [1, 0.8, 0.6];
+  const flux = [0, 1, 2].map(b => { const f = new Float32Array(F); for (let i = 1; i < F; i++) f[i] = Math.max(0, E[b][i] - E[b][i - 1]) * Wt[b]; return f; });
+  const sm = new Float32Array(F);
+  for (let i = 1; i < F - 1; i++){
+    const o = k => flux[0][k] + flux[1][k] + flux[2][k];
+    sm[i] = 0.25 * o(i - 1) + 0.5 * o(i) + 0.25 * o(i + 1);
+  }
+  let gm = 0; for (let i = 0; i < F; i++) gm += sm[i]; gm /= Math.max(1, F);
+  // pick the peaks
+  const onsets = []; let lastI = -99;
+  for (let i = 4; i < F - 4; i++){
+    const v = sm[i]; if (v <= 0) continue;
+    let isMax = true; for (let k = -4; k <= 4; k++) if (k && sm[i + k] > v){ isMax = false; break; }
+    if (!isMax) continue;
+    let m = 0, c = 0; for (let k = Math.max(0, i - 30); k < Math.min(F, i + 10); k++){ m += sm[k]; c++; } m /= c;
+    if (v < m * 1.35 + gm * 0.15 || i - lastI < 4) continue;
+    let b = 0; for (const bb of [1, 2]) if (flux[bb][i] > flux[b][i]) b = bb;
+    onsets.push({ t: +(i * hopSec).toFixed(4), s: +v.toFixed(4), b });
+    lastI = i;
+  }
+  // tempo: which spacing between beats repeats the most?
+  const lagMin = Math.floor(60 / (200 * hopSec)), lagMax = Math.ceil(60 / (70 * hopSec)), ac = [];
+  let bestLag = lagMin, best = -1;
+  for (let lag = lagMin; lag <= lagMax; lag++){
+    let sum = 0; for (let i = 0; i + lag < F; i++) sum += sm[i] * sm[i + lag];
+    ac[lag] = sum;
+    const bpm = 60 / (lag * hopSec), w = Math.exp(-0.5 * Math.pow(Math.log2(bpm / 125) / 0.7, 2));
+    if (sum * w > best){ best = sum * w; bestLag = lag; }
+  }
+  let lag = bestLag; const a = ac[lag - 1] || 0, b2 = ac[lag], c2 = ac[lag + 1] || 0, den = a - 2 * b2 + c2;
+  if (den) lag += 0.5 * (a - c2) / den;
+  let bpm = 60 / (lag * hopSec); while (bpm < 80) bpm *= 2; while (bpm > 190) bpm /= 2;
+  const P = 60 / bpm / hopSec; let bestPh = 0, bs = -1;
+  for (let ph = 0; ph < P; ph += 1){ let sum = 0; for (let x = ph; x < F; x += P) sum += sm[Math.round(x)] || 0; if (sum > bs){ bs = sum; bestPh = ph; } }
+  return { bpm: +bpm.toFixed(2), beatOffset: +(bestPh * hopSec).toFixed(4), duration: buf.duration, onsets };
+}
+
+function makeCustomGen(song){
+  const a = song.rec.analysis, beat = 60 / a.bpm;
+  let seed = 7; for (const ch of song.id) seed = (seed * 31 + ch.charCodeAt(0)) | 0;
+  return { song, step: beat / 4, beat, beatOffset: a.beatOffset, audio: [], cands: [], seed: Math.abs(seed), bars: 0, secs: [], plan: [],
+    duration: a.duration + 1.5, charts: [], custom: true, onsets: a.onsets };
+}
+function buildCustomChart(G, level){
+  const R = rng(G.seed * 7 + level), ons = G.onsets;
+  if (!ons.length) return [];
+  const sorted = ons.map(o => o.s).sort((a, b) => a - b);
+  const pct = v => { let lo = 0, hi = sorted.length; while (lo < hi){ const m = (lo + hi) >> 1; if (sorted[m] < v) lo = m + 1; else hi = m; } return lo / sorted.length; };
+  const minGap = [0.6, 0.42, 0.26, 0.17, 0.115, 0.08][level], minPct = [0.7, 0.5, 0.32, 0.18, 0.07, 0][level];
+  const picked = [];
+  for (const o of ons){
+    const p = pct(o.s); if (p < minPct) continue;
+    const last = picked[picked.length - 1];
+    if (last && o.t - last.t < minGap){
+      const prev = picked[picked.length - 2];
+      if (p > last.p + 0.15 && (!prev || o.t - prev.t >= minGap)) picked[picked.length - 1] = { ...o, p };
+      continue;
+    }
+    picked.push({ ...o, p });
+  }
+  const notes = [], busy = new Array(LANES).fill(-9);
+  let lastLane = 2, lastT = -9;
+  const fits = (l, w, t) => { if (l < 0 || l + w > LANES) return false; for (let i = l; i < l + w; i++) if (busy[i] > t - 0.03) return false; return true; };
+  const place = (pref, w, t) => { pref = clamp(pref, 0, LANES - w); for (let o = 0; o < LANES; o++){ if (fits(pref + o, w, t)) return pref + o; if (o && fits(pref - o, w, t)) return pref - o; } return -1; };
+  for (let k = 0; k < picked.length; k++){
+    const o = picked[k], t = o.t, next = picked[k + 1], gap = next ? next.t - t : 2;
+    let lane, type = 'tap', w = 1, end = 0;
+    if (level === 0) lane = lastLane === 2 ? 3 : 2;
+    else {                                   // bass → left, mids → middle, treble → right
+      const base = [0, 2, 4][o.b];
+      lane = base + (R() < 0.5 ? 0 : 1);
+      if (lane === lastLane && t - lastT < 0.25) lane = lane === base ? base + 1 : base;
+    }
+    if (level >= 1 && gap > 0.75 && R() < 0.45){ type = 'hold'; end = t + Math.min(gap * 0.65, 2.2); }
+    else if (level >= 1 && o.p > 0.85 && gap > 0.3 && R() < 0.35) type = 'flick';
+    if (type !== 'hold' && level >= 1 && o.p > 0.95) w = 2;
+    const l = place(lane - (w > 1 ? 1 : 0), w, t);
+    if (l < 0) continue;
+    let lane2 = l;
+    if (type === 'hold' && level >= 2 && R() < 0.4){
+      const l2 = l + (R() < 0.5 ? -1 : 1) * (1 + Math.floor(R() * Math.min(3, level)));
+      if (l2 >= 0 && l2 + w <= LANES){ let ok = true; for (let i = Math.min(l, l2); i <= Math.max(l, l2) + w - 1; i++) if (busy[i] > t - 0.03) ok = false; if (ok) lane2 = l2; }
+    }
+    const n = { t, lane: l, w, type, end };
+    if (type === 'hold') n.lane2 = lane2;
+    if (type !== 'hold' && level >= 3 && o.p > 0.97) n.crit = true;
+    notes.push(n);
+    for (let i = Math.min(l, lane2); i <= Math.max(l, lane2) + w - 1; i++) busy[i] = type === 'hold' ? end : t;
+    lastLane = l; lastT = t;
+    if (type === 'tap' && w === 1 && ((level >= 4 && o.p > 0.8) || (level >= 5 && o.p > 0.6))){
+      const m = LANES - 1 - l;
+      if (Math.abs(m - l) >= 2 && fits(m, 1, t)){ notes.push({ t, lane: m, w: 1, type: 'tap', end: 0 }); busy[m] = t; }
+    }
+  }
+  notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
+  return notes;
+}
+function addCustomSong(rec){
+  let h = 7; for (const ch of rec.id) h = (h * 31 + ch.charCodeAt(0)) | 0;
+  const pal = [['#4dd9ff','#ff5fa2'],['#ffd166','#7a5cff'],['#7dffb3','#ff7a3d'],['#c77dff','#66e0ff']][Math.abs(h) % 4];
+  const song = { id: rec.id, title: rec.name, artist: 'Your music', bpm: Math.round(rec.analysis.bpm), color: pal[0], color2: pal[1], levels: [], custom: true, rec };
+  SONGS.push(song);
+  const i = SONGS.length - 1;
+  song.levels = [0, 1, 2, 3, 4, 5].map(d => {
+    const nps = getChart(i, d).length / Math.max(30, rec.analysis.duration);
+    return clamp(Math.round(nps * 3 + d * 1.5 + 1), 1, 45);
+  });
+  song.levels.push('∞');
+  return i;
+}
+async function loadCustomBuffer(song){ const ab = await song.rec.blob.arrayBuffer(); song.buffer = await AC.decodeAudioData(ab); }
+async function importMusic(file){
+  if (!file) return;
+  initAudio();
+  const name = file.name.replace(/\.[^.]+$/, '').slice(0, 60) || 'My song';
+  toast(`🎧 Listening to "${name}"… this takes a few seconds`);
+  try {
+    const buf = await AC.decodeAudioData(await file.arrayBuffer());
+    const analysis = await analyzeBuffer(buf);
+    if (analysis.onsets.length < 10) throw new Error('quiet');
+    const rec = { id: 'u' + Date.now(), name, blob: file, analysis };
+    try { await IDB.put(rec); } catch (e) { toast('Added, but it can\'t be saved in this browser, so it\'ll be gone after a reload.'); }
+    const i = addCustomSong(rec);
+    SONGS[i].buffer = buf;
+    sel.song = i; sel.diff = Math.min(sel.diff, 5);
+    if (screen === 'select') renderSelect();
+    toast(`✅ Added "${name}" (about ${Math.round(analysis.bpm)} BPM)`);
+  } catch (e) {
+    toast(e.message === 'quiet' ? 'That file is too quiet or too short to make a chart' : 'Couldn\'t read that file. Try an MP3, M4A, WAV or OGG.');
+  }
+}
+$('fileIn').addEventListener('change', e => { importMusic(e.target.files[0]); e.target.value = ''; });
+IDB.all().then(recs => {
+  recs.sort((a, b) => a.id.localeCompare(b.id)).forEach(addCustomSong);
+  if (screen === 'select') renderSelect();
+}).catch(() => {});
+
 /* ================= GAME STATE ================= */
 let screen = 'title';
 const sel = { song: 0, diff: 0 };
@@ -1025,6 +1532,12 @@ function startGame(lessonIdx){
   if (lessonIdx === undefined) lessonIdx = null;
   lastLesson = lessonIdx;
   initAudio();
+  if (lessonIdx == null && SONGS[sel.song].custom && !SONGS[sel.song].buffer){
+    const sg = SONGS[sel.song];
+    toast('🎧 Loading your song…');
+    loadCustomBuffer(sg).then(() => startGame(null)).catch(() => toast('Couldn\'t load that song file'));
+    return;
+  }
   if (game) stopMusic();
   AC.resume();
   let g, src, song, diff = sel.diff, label, labelColor, hint = '', lesson = null;
@@ -1053,10 +1566,15 @@ function startGame(lessonIdx){
     beatPulse: 0, comboPulse: 0, touch: false,
     events, speedSegs: events.filter(e => e.kind === 'speed'), roads: crossMode ? song.roads : 1,
   };
+  if (song.custom && song.buffer){
+    const srcNode = AC.createBufferSource(); srcNode.buffer = song.buffer; srcNode.connect(bus);
+    srcNode.start(game.t0); game.srcNode = srcNode;
+  }
   down.clear(); ptrs.clear();
   showScreen(null);
 }
 function stopMusic(){
+  if (game && game.srcNode){ try { game.srcNode.stop(); } catch(e){} }
   if (game && game.bus){ try { game.bus.disconnect(); } catch(e){} }
   if (AC && AC.state === 'suspended') AC.resume();
 }
@@ -1164,7 +1682,7 @@ function update(){
   }
   for (let l = 0; l < LANES; l++) if (down.has('k' + l)) G.laneFlash[l] = Math.max(G.laneFlash[l], 0.5);
   for (const p of ptrs.values()) G.laneFlash[p.lane] = Math.max(G.laneFlash[p.lane], 0.5);
-  const b = now / G.gen.beat;
+  const b = (now - (G.gen.beatOffset || 0)) / G.gen.beat;
   G.beatPulse = now > 0 ? Math.max(0, 1 - (b - Math.floor(b)) * 3) : 0;
   if (!G.ended && now > G.gen.duration - 1.5 && G.first >= N.length) endGame();
 }
@@ -1322,7 +1840,8 @@ function drawHoldBand(n, tA, tB, active, D){
   // diamond ticks on every beat inside the hold
   if (game){
     const beat = game.gen.beat;
-    for (let tb = Math.ceil((n.t + 0.02) / beat) * beat; tb < n.end - 0.02; tb += beat){
+    const bo = game.gen.beatOffset || 0;
+    for (let tb = bo + Math.ceil((n.t + 0.02 - bo) / beat) * beat; tb < n.end - 0.02; tb += beat){
       const d = D(tb);
       if (d < dA || d > dB) continue;
       const pp = proj(d), pos = holdPos(n, tb);
@@ -1363,7 +1882,7 @@ function drawGame(dt){
   const roadCols = [song.color, song.color2, '#ffffff'];
   const yBot = multi ? L.judgeY : H, sB = multi ? 1 : sBot;
   const skewIn = k => { if (k) cx.transform(1, 0, -k, 1, k * L.judgeY, 0); };
-  const beat = G.gen.beat;
+  const beat = G.gen.beat, bo = G.gen.beatOffset || 0;
 
   skews.forEach((k, r) => {
     cx.save(); skewIn(k);
@@ -1385,8 +1904,8 @@ function drawGame(dt){
       cx.strokeStyle = edge ? hexA(edgeCol, 0.8) : (LANES % 2 === 0 && i === LANES / 2) ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)';
       cx.lineWidth = edge ? 2.5 : 1; cx.stroke();
     }
-    for (let b = Math.max(0, Math.floor(now / beat)); D(b * beat) < 1.05; b++){
-      const d = D(b * beat);
+    for (let b = Math.max(0, Math.floor((now - bo) / beat)); D(bo + b * beat) < 1.05; b++){
+      const d = D(bo + b * beat);
       if (d < 0) continue;
       const p = proj(d);
       cx.beginPath(); cx.moveTo(xAt(0, p.s), p.y); cx.lineTo(xAt(LANES, p.s), p.y);
@@ -1688,16 +2207,21 @@ function renderSelect(){
   document.documentElement.style.setProperty('--c', s.color);
   document.documentElement.style.setProperty('--c2', s.color2);
   $('songList').innerHTML = SONGS.map((x, i) =>
-    `<button class="song ${i === sel.song ? 'on' : ''} ${x.boss ? 'boss' : x.cross ? 'cross' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
-      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${x.boss ? '★ FINAL BOSS · ' : x.cross ? '⇶ CROSSROADS · ' + x.roads + ' roads · ' : ''}${x.bpm} BPM</small></span></button>`).join('');
+    `<button class="song ${i === sel.song ? 'on' : ''} ${x.boss ? 'boss' : x.cross ? 'cross' : x.custom ? 'mine' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
+      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${x.boss ? '★ FINAL BOSS · ' : x.cross ? '⇶ CROSSROADS · ' + x.roads + ' roads · ' : x.custom ? '🎵 YOUR MUSIC · ~' : ''}${x.bpm} BPM</small></span></button>`).join('');
+  $('songList').innerHTML += `<button class="song addmusic" data-act="addmusic">🎵 Add your own music <kbd style="margin-left:6px">M</kbd></button>`;
   { const on = document.querySelector('#songList .song.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' }); }
   $('dTitle').textContent = s.title;
-  $('dArtist').textContent = `${s.artist} · ${s.bpm} BPM`;
+  $('dArtist').textContent = `${s.artist} · ${s.custom ? '~' : ''}${s.bpm} BPM`;
+  { const un = unitOfSong(s.id);
+    $('dUnit').innerHTML = un ? `<span style="color:${un.color}">${un.id === 'stage' ? '✦ Prism\'s pick' : '♪ ' + un.name}</span>` : '';
+    const who = un ? un.members[(sel.song + s.bpm) % un.members.length] : null;
+    $('dPortrait').innerHTML = who ? portrait(who, 'smile') : ''; }
   $('diffs').innerHTML = DIFFS.map((d, i) =>
     `<button class="diff ${i === sel.diff ? 'on' : ''}" data-diff="${i}" style="--dc:${d.color}"><small>${d.name}</small><b>${s.levels[i]}</b></button>`).join('');
   const ch = getChart(sel.song, sel.diff);
   const best = store.get(`best_${s.id}_${DIFFS[sel.diff].name}`, null);
-  $('meta').innerHTML = (s.cross ? `<span style="color:#ffd166">⇶ ${s.roads} roads · 6 lanes each</span>` : '') + `<span>${ch.length} notes</span><span>Best: ${best ? best.score.toLocaleString() + ' · ' + best.rank + (best.badge ? ' · ' + best.badge : '') : '—'}</span>`;
+  $('meta').innerHTML = (s.custom ? `<span><button class="smallbtn" data-act="delcustom">🗑 Remove song</button></span>` : '') + (s.cross ? `<span style="color:#ffd166">⇶ ${s.roads} roads · 6 lanes each</span>` : '') + `<span>${ch.length} notes</span><span>Best: ${best ? best.score.toLocaleString() + ' · ' + best.rank + (best.badge ? ' · ' + best.badge : '') : '—'}</span>`;
   $('oSpeed').textContent = settings.speed;
   $('oOffset').textContent = (settings.offset > 0 ? '+' : '') + settings.offset + ' ms';
   $('oAuto').textContent = settings.auto ? 'ON' : 'OFF';
@@ -1720,6 +2244,10 @@ function showResults(){
   $('rScore').textContent = sc.toLocaleString();
   const key = `best_${G.song.id}_${DIFFS[G.diff].name}`, prev = store.get(key, null);
   const bestEl = $('rBest');
+  if (!G.auto && !G.failed){
+    const cl = store.get('clears', []), ck = G.song.id + '_' + G.diff;
+    if (!cl.includes(ck)){ cl.push(ck); store.set('clears', cl); if (CHAPTER_NEED.includes(cl.length)) setTimeout(() => toast('📖 New story chapters unlocked!'), 600); }
+  }
   if (!G.auto && !G.failed && (!prev || sc > prev.score)){
     store.set(key, { score: sc, rank, badge: ap ? 'AP' : fc ? 'FC' : '' });
     bestEl.textContent = 'NEW BEST!'; bestEl.className = 'rBest new';
@@ -1751,18 +2279,33 @@ function act(a){
     case 'lesson-start': if (lsel < lessonsUnlocked()) startGame(lsel); break;
     case 'next': lsel = Math.min(LESSONS.length - 1, lastLesson + 1); startGame(lsel); break;
     case 'menu': backToMenu(); break;
+    case 'story': showStory(); break;
+    case 'vnnext': vnNext(); break;
+    case 'addmusic': $('fileIn').click(); break;
+    case 'delcustom': {
+      const sg = SONGS[sel.song];
+      if (!sg || !sg.custom) break;
+      if (!confirm(`Remove "${sg.title}"?`)) break;
+      IDB.del(sg.id).catch(() => {});
+      SONGS.splice(sel.song, 1);
+      sel.song = Math.max(0, sel.song - 1);
+      renderSelect(); toast('Removed');
+      break;
+    }
   }
 }
 
 /* ================= INPUT ================= */
 document.addEventListener('click', e => {
-  const b = e.target.closest('[data-act],[data-song],[data-diff],[data-lesson]');
+  const b = e.target.closest('[data-act],[data-song],[data-diff],[data-lesson],[data-unit],[data-chapter]');
   if (!b) return;
   initAudio();
   if (b.blur) b.blur();
   if (b.dataset.song != null){ sel.song = +b.dataset.song; renderSelect(); sfx('blip'); }
   else if (b.dataset.diff != null){ sel.diff = +b.dataset.diff; renderSelect(); sfx('blip'); }
   else if (b.dataset.lesson != null){ lsel = +b.dataset.lesson; renderLessons(); sfx('blip'); }
+  else if (b.dataset.unit != null){ storySel.unit = +b.dataset.unit; storySel.ch = 0; renderStory(); sfx('blip'); }
+  else if (b.dataset.chapter != null){ storySel.ch = +b.dataset.chapter; openChapter(storySel.unit, storySel.ch); }
   else act(b.dataset.act);
 });
 
@@ -1780,7 +2323,22 @@ addEventListener('keydown', e => {
     return;
   }
   if (e.repeat && (k === 'enter' || k === ' ')) return;
-  if (screen === 'title'){ if (k === 'enter' || k === ' ') goSelect(); else if (k === 'l') showLessons(); }
+  if (screen === 'title'){ if (k === 'enter' || k === ' ') goSelect(); else if (k === 'l') showLessons(); else if (k === 's') showStory(); }
+  else if (screen === 'story'){
+    const u = UNITS[storySel.unit];
+    switch (k){
+      case 'arrowup': storySel.unit = Math.max(0, storySel.unit - 1); storySel.ch = 0; renderStory(); sfx('blip'); break;
+      case 'arrowdown': storySel.unit = Math.min(UNITS.length - 1, storySel.unit + 1); storySel.ch = 0; renderStory(); sfx('blip'); break;
+      case 'arrowleft': storySel.ch = Math.max(0, storySel.ch - 1); renderStory(); sfx('blip'); break;
+      case 'arrowright': storySel.ch = Math.min(u.chapters.length - 1, storySel.ch + 1); renderStory(); sfx('blip'); break;
+      case 'enter': case ' ': openChapter(storySel.unit, storySel.ch); break;
+      case 'escape': showScreen('title'); break;
+    }
+  }
+  else if (screen === 'reader'){
+    if (k === 'enter' || k === ' ' || k === 'arrowright') vnNext();
+    else if (k === 'escape') closeChapter(false);
+  }
   else if (screen === 'lessons'){
     switch (k){
       case 'arrowup': case 'arrowleft': lsel = Math.max(0, lsel - 1); renderLessons(); sfx('blip'); break;
@@ -1798,6 +2356,7 @@ addEventListener('keydown', e => {
       case 'arrowright': sel.diff = Math.min(DIFFS.length - 1, sel.diff + 1); renderSelect(); sfx('blip'); break;
       case 'enter': case ' ': startGame(null); break;
       case 'l': showLessons(); break;
+      case 'm': $('fileIn').click(); break;
       case '-': case '_': act('spd-'); break;
       case '=': case '+': act('spd+'); break;
       case '[': act('off-'); break;
