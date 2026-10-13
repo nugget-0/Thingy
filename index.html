@@ -28,7 +28,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 @keyframes breathe{50%{box-shadow:0 0 34px rgba(77,217,255,.5);border-color:#4dd9ff}}
 .howto{margin-top:34px;padding:16px 20px;border-radius:18px;background:rgba(12,14,34,.6);border:1px solid rgba(255,255,255,.12);font-size:14px;line-height:2.1}
 .legend .n{display:inline-block;width:32px;height:11px;border-radius:6px;border:2px solid #fff;vertical-align:middle;margin:0 6px 0 12px}
-.n.tap{background:linear-gradient(#7ee8ff,#2f8cff)}.n.hold{background:linear-gradient(#9dffc8,#1fcf7a)}.n.flick{background:linear-gradient(#ffa3d7,#ff3c8e)}
+.n.tap{background:linear-gradient(#7ee8ff,#2f8cff)}.n.hold{background:linear-gradient(#9dffc8,#1fcf7a)}.n.flick{background:linear-gradient(#ffa3d7,#ff3c8e)}.n.crit{background:linear-gradient(#fff8d0,#ffc93d)}
 
 /* select */
 .selwrap{display:grid;grid-template-columns:minmax(220px,330px) minmax(280px,520px);gap:22px;width:100%;max-width:900px;align-items:start}
@@ -108,7 +108,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
   <button class="pill pill2" data-act="lessons">📘 New here? Lessons <kbd>L</kbd></button>
   <div class="howto">
     <div>Play with <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> &nbsp; <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> &nbsp;or tap the lanes</div>
-    <div class="legend"><span class="n tap"></span>Tap<span class="n hold"></span>Hold<span class="n flick"></span>Flick (swipe up on touch)</div>
+    <div class="legend"><span class="n tap"></span>Tap<span class="n hold"></span>Hold<span class="n flick"></span>Flick (swipe up on touch)<span class="n crit"></span>Critical</div>
   </div>
 </div>
 
@@ -183,7 +183,7 @@ const LANES = 6;
 const KEYS = ['s','d','f','j','k','l'];
 const WIN = { perfect:0.045, great:0.090, good:0.130, bad:0.170 };
 const JUDGE_NAMES = ['PERFECT','GREAT','GOOD','BAD','MISS'];
-const JUDGE_COLORS = ['#ffe066','#ff7ad9','#5ee0ff','#a3acc2','#7d8291'];
+const JUDGE_COLORS = ['#ffe066','#ff6fbf','#41cfff','#9b8cff','#8a8f99'];
 const JUDGE_SCORE = [1, 0.8, 0.5, 0.2, 0];
 const DIFFS = [
   { name:'BEGINNER', color:'#b9f3ff' },
@@ -206,10 +206,12 @@ const SONGS = [
 const BEGINNER_WIN = { perfect:0.07, great:0.13, good:0.19, bad:0.25 };
 const BARS = 32;
 const LEADIN = 2.2;
+// [light, mid, dark]
 const NOTE_COL = {
-  tap:   ['#8af0ff', '#2f8cff'],
-  hold:  ['#a8ffd0', '#1fcf7a'],
-  flick: ['#ffb0dc', '#ff3c8e'],
+  tap:   ['#d4f7ff', '#41cfff', '#1a78e6'],
+  hold:  ['#dcffec', '#3fe39a', '#12a463'],
+  flick: ['#ffd6ee', '#ff5aa8', '#d0186c'],
+  crit:  ['#fff8d0', '#ffd23f', '#e08e00'],
 };
 
 const $ = id => document.getElementById(id);
@@ -490,6 +492,7 @@ function buildChart(G, level){
     }
     notes.push(type === 'hold' ? { t, lane:l, w, type, end, lane2 } : { t, lane:l, w, type, end });
     for (let i = Math.min(l, lane2); i <= Math.max(l, lane2) + w - 1; i++) busy[i] = type === 'hold' ? end : t;
+    if (type !== 'hold' && (isFinal || (level >= 2 && sec === 'chorus' && sb === 0))) notes[notes.length - 1].crit = true;
     lastGs = gs; lastLane = l;
 
     if (type === 'tap' && w === 1 && sec === 'chorus' && ((level >= 2 && sb === 8) || (level === 3 && (sb === 4 || sb === 12)))){
@@ -576,13 +579,26 @@ function playEvent(e, t){
 }
 function sfx(kind){
   if (!AC) return;
-  const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
-  o.type = 'sine';
-  if (kind === 'flick'){ o.frequency.setValueAtTime(900, t); o.frequency.exponentialRampToValueAtTime(2400, t + 0.08); }
-  else if (kind === 'blip'){ o.frequency.setValueAtTime(660, t); o.frequency.exponentialRampToValueAtTime(990, t + 0.05); }
-  else { o.frequency.setValueAtTime(1500, t); o.frequency.exponentialRampToValueAtTime(900, t + 0.05); }
-  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(kind === 'blip' ? 0.2 : 0.3, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
-  o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t + 0.1);
+  const t = AC.currentTime;
+  const ping = (f0, f1, dur, vol, type) => {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.6);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t + dur + 0.02);
+  };
+  const hiss = (f0, f1, dur, vol, q) => {
+    const src = AC.createBufferSource(); src.buffer = noiseBuf;
+    const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = q || 1.2;
+    f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    const g = AC.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(sfxGain); src.start(t); src.stop(t + dur + 0.02);
+  };
+  if (kind === 'blip'){ ping(660, 990, 0.08, 0.2); return; }
+  if (kind === 'flick'){ hiss(1400, 7000, 0.12, 0.55, 0.9); ping(1200, 2600, 0.09, 0.18); return; }
+  hiss(3200, 2400, 0.035, 0.5, 2);           // crisp "tak"
+  ping(1900, 1300, 0.05, 0.22, 'triangle');
+  if (kind === 'crit'){ ping(2640, 2640, 0.22, 0.12); ping(3960, 3960, 0.16, 0.06); }
 }
 
 /* ================= CANVAS / LAYOUT ================= */
@@ -859,7 +875,7 @@ function judge(n, j, tail){
   G.lastJudge = { j, at: performance.now() };
   if (j < 4){
     spawnHit(n, j, tail);
-    sfx(n.type === 'flick' && !tail ? 'flick' : 'tap');
+    sfx(n.type === 'flick' && !tail ? 'flick' : n.crit ? 'crit' : 'tap');
   }
   if (G.noFail) G.life = Math.max(G.life, 1); // Beginner and lessons can't fail
   if (G.life <= 0 && !G.ended){ G.life = 0; G.failed = true; endGame(); }
@@ -941,21 +957,24 @@ function holdHeld(n, now){
 }
 
 /* ================= EFFECTS ================= */
+function noteColor(n){ return n.crit ? NOTE_COL.crit : NOTE_COL[n.type]; }
 function spawnHit(n, j, tail){
   const G = game;
   const lane = tail && n.lane2 != null ? n.lane2 : n.lane;
   const x = xAt(lane + n.w / 2, 1), w = n.w * L.hw / LANES;
-  const col = n.type === 'flick' ? NOTE_COL.flick[0] : n.type === 'hold' ? NOTE_COL.hold[0] : JUDGE_COLORS[j] === '#ffe066' ? '#fff2a8' : NOTE_COL.tap[0];
-  G.fx.push({ x, w, life: 0, max: 0.38, col, beam: j === 0 });
-  const cnt = j === 0 ? 14 : 8;
+  const col = noteColor(n);
+  G.fx.push({ x, w, life: 0, max: 0.42, col, perfect: j === 0, crit: !!n.crit, flick: n.type === 'flick' && !tail, rot: Math.random() * 0.6 - 0.3 });
+  for (let l = Math.floor(lane); l < lane + n.w && l < LANES; l++) G.laneFlash[l] = 1;
+  const cnt = (j === 0 ? 12 : 7) + (n.crit ? 10 : 0);
   for (let i = 0; i < cnt; i++){
-    const a = -Math.PI / 2 + (Math.random() - .5) * 2.2, sp = (200 + Math.random() * 420) * L.u;
-    G.parts.push({ x: x + (Math.random() - .5) * w * 0.8, y: L.judgeY, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0, max: 0.4 + Math.random() * 0.35, col, s: (3 + Math.random() * 4) * L.u });
+    const a = -Math.PI / 2 + (Math.random() - .5) * (n.type === 'flick' && !tail ? 1.2 : 2.6), sp = (220 + Math.random() * 480) * L.u;
+    G.parts.push({ x: x + (Math.random() - .5) * w * 0.8, y: L.judgeY, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0, max: 0.35 + Math.random() * 0.35,
+      col: Math.random() < 0.35 ? '#ffffff' : col[1], s: (4 + Math.random() * 6) * L.u, r: Math.random() * 3, vr: (Math.random() - .5) * 12 });
   }
 }
 function spawnSpark(n, p){
   const x = xAt((p ?? n.lane) + Math.random() * n.w, 1);
-  game.parts.push({ x, y: L.judgeY, vx: (Math.random() - .5) * 60, vy: -(150 + Math.random() * 250) * L.u, life: 0, max: 0.45, col: NOTE_COL.hold[0], s: (2 + Math.random() * 3) * L.u });
+  game.parts.push({ x, y: L.judgeY, vx: (Math.random() - .5) * 60, vy: -(150 + Math.random() * 250) * L.u, life: 0, max: 0.45, col: NOTE_COL.hold[1], s: (3 + Math.random() * 4) * L.u, r: Math.random() * 3, vr: 6 });
 }
 
 /* ================= DRAWING ================= */
@@ -979,26 +998,58 @@ function drawBg(song, t, dt){
   }
 }
 
+// Note body: a flat bar with angled ends, bright outline and a glossy center stripe
+function notePath(x0, x1, y, h){
+  const k = Math.min(h * 0.55, (x1 - x0) * 0.22);
+  cx.beginPath();
+  cx.moveTo(x0, y); cx.lineTo(x0 + k, y - h / 2); cx.lineTo(x1 - k, y - h / 2);
+  cx.lineTo(x1, y); cx.lineTo(x1 - k, y + h / 2); cx.lineTo(x0 + k, y + h / 2); cx.closePath();
+}
+function diamond(x, y, r){ cx.beginPath(); cx.moveTo(x, y - r); cx.lineTo(x + r, y); cx.lineTo(x, y + r); cx.lineTo(x - r, y); cx.closePath(); }
 function drawNote(n, d, flickPending, laneAt){
   const p = proj(d), s = p.s, u = L.u;
   const lp = laneAt ?? n.lane;
-  const x0 = xAt(lp + 0.06, s), x1 = xAt(lp + n.w - 0.06, s);
-  const h = Math.max(4, 30 * s * u), y = p.y;
-  const col = NOTE_COL[n.type];
+  const x0 = xAt(lp + 0.02, s), x1 = xAt(lp + n.w - 0.02, s);
+  const h = Math.max(4, 25 * s * u), y = p.y;
+  const col = noteColor(n);
+  // soft glow
+  cx.save();
+  cx.shadowColor = col[1]; cx.shadowBlur = (n.crit ? 22 : 12) * s;
   const g = cx.createLinearGradient(0, y - h / 2, 0, y + h / 2);
-  g.addColorStop(0, col[0]); g.addColorStop(1, col[1]);
-  cx.fillStyle = g;
-  rr(x0, y - h / 2, x1 - x0, h, h / 2); cx.fill();
-  cx.lineWidth = Math.max(1, 2.6 * s * u); cx.strokeStyle = 'rgba(255,255,255,.95)'; cx.stroke();
-  cx.fillStyle = 'rgba(255,255,255,.4)';
-  rr(x0 + h * .45, y - h * .3, (x1 - x0) - h * .9, h * .2, h * .1); cx.fill();
-  if (n.type === 'flick'){
-    const xm = (x0 + x1) / 2, ah = 22 * s * u * (flickPending ? 1.4 : 1), aw = 30 * s * u;
-    const by = y - h / 2 - 3 * s;
-    cx.beginPath(); cx.moveTo(xm, by - ah); cx.lineTo(xm + aw / 2, by); cx.lineTo(xm - aw / 2, by); cx.closePath();
-    cx.fillStyle = '#fff'; cx.fill();
-    cx.lineWidth = 2 * s; cx.strokeStyle = col[1]; cx.stroke();
+  g.addColorStop(0, col[0]); g.addColorStop(0.45, col[1]); g.addColorStop(1, col[2]);
+  notePath(x0, x1, y, h); cx.fillStyle = g; cx.fill();
+  cx.restore();
+  // white rim
+  cx.lineWidth = Math.max(1.2, 3.2 * s * u); cx.strokeStyle = '#fff';
+  notePath(x0, x1, y, h); cx.stroke();
+  // glossy stripe + end gems
+  if (x1 - x0 > h * 2){
+    cx.fillStyle = 'rgba(255,255,255,.78)';
+    notePath(x0 + h * 0.75, x1 - h * 0.75, y - h * 0.04, h * 0.26); cx.fill();
+    cx.fillStyle = '#fff';
+    diamond(x0 + h * 0.5, y, h * 0.17); cx.fill();
+    diamond(x1 - h * 0.5, y, h * 0.17); cx.fill();
   }
+  if (n.type === 'flick') drawFlickArrow((x0 + x1) / 2, y - h / 2, s, col, flickPending, Math.min(n.w, 3));
+}
+// Flick: chunky chevron arrow that bobs upward
+function drawFlickArrow(xm, baseY, s, col, pending, w){
+  const u = L.u, t = performance.now() / 1000;
+  const bob = (pending ? 10 : 4) * s * u * (0.5 + 0.5 * Math.sin(t * 10));
+  const aw = (26 + 10 * w) * s * u, ah = 24 * s * u, th = 9 * s * u;
+  const by = baseY - 4 * s - bob;
+  for (let k = 1; k >= 0; k--){                       // two stacked chevrons, back one fainter
+    const oy = by - k * th * 1.1;
+    cx.beginPath();
+    cx.moveTo(xm, oy - ah); cx.lineTo(xm + aw / 2, oy); cx.lineTo(xm + aw / 2 - th, oy);
+    cx.lineTo(xm, oy - ah + th * 1.2); cx.lineTo(xm - aw / 2 + th, oy); cx.lineTo(xm - aw / 2, oy); cx.closePath();
+    const g = cx.createLinearGradient(0, oy - ah, 0, oy);
+    g.addColorStop(0, '#fff'); g.addColorStop(1, col[1]);
+    cx.globalAlpha = k ? 0.55 : 1;
+    cx.fillStyle = g; cx.fill();
+    cx.lineWidth = Math.max(1, 2 * s * u); cx.strokeStyle = '#fff'; cx.stroke();
+  }
+  cx.globalAlpha = 1;
 }
 function drawHoldBand(n, dA, dB, active, now, vis){
   if (dB <= dA) return;
@@ -1015,9 +1066,24 @@ function drawHoldBand(n, dA, dB, active, now, vis){
   for (let i = right.length - 1; i >= 0; i--) cx.lineTo(right[i][0], right[i][1]);
   cx.closePath();
   const g = cx.createLinearGradient(0, a.y, 0, b.y);
-  const al = active ? 0.55 + 0.15 * Math.sin(performance.now() / 60) : 0.45;
-  g.addColorStop(0, `rgba(110,255,180,${al})`); g.addColorStop(1, 'rgba(110,255,180,.12)');
+  const al = active ? 0.5 + 0.15 * Math.sin(performance.now() / 60) : 0.36;
+  g.addColorStop(0, `rgba(90,255,170,${al})`); g.addColorStop(1, 'rgba(90,255,170,.14)');
   cx.fillStyle = g; cx.fill();
+  // bright side rails
+  cx.lineWidth = 2 * L.u + 0.5; cx.strokeStyle = `rgba(200,255,225,${active ? 0.9 : 0.6})`;
+  for (const side of [left, right]){ cx.beginPath(); side.forEach((q, i) => i ? cx.lineTo(q[0], q[1]) : cx.moveTo(q[0], q[1])); cx.stroke(); }
+  // diamond ticks on every beat inside the hold
+  if (game){
+    const beat = game.gen.beat;
+    for (let tb = Math.ceil((n.t + 0.02) / beat) * beat; tb < n.end - 0.02; tb += beat){
+      const d = (tb - now) / vis;
+      if (d < dA || d > dB) continue;
+      const pp = proj(d), pos = holdPos(n, tb);
+      const x = xAt(pos + n.w / 2, pp.s), r = Math.max(2, 9 * pp.s * L.u);
+      diamond(x, pp.y, r); cx.fillStyle = NOTE_COL.hold[1]; cx.fill();
+      cx.lineWidth = Math.max(1, 2 * pp.s); cx.strokeStyle = '#fff'; cx.stroke();
+    }
+  }
   if (slide){ // bright guide line down the middle of a slide
     cx.beginPath();
     for (let i = 0; i <= SEG; i++){ const x = (left[i][0] + right[i][0]) / 2; i ? cx.lineTo(x, left[i][1]) : cx.moveTo(x, left[i][1]); }
@@ -1027,9 +1093,9 @@ function drawHoldBand(n, dA, dB, active, now, vis){
   if (dB <= 1.05){
     const tl = holdPos(n, now + dB * vis);
     const s = b.s, x0 = xAt(tl + 0.16, s), x1 = xAt(tl + n.w - 0.16, s), h = Math.max(3, 14 * s * L.u);
-    cx.fillStyle = NOTE_COL.hold[0];
-    rr(x0, b.y - h / 2, x1 - x0, h, h / 2); cx.fill();
-    cx.strokeStyle = '#fff'; cx.lineWidth = Math.max(1, 2 * s); cx.stroke();
+    cx.fillStyle = NOTE_COL.hold[1];
+    notePath(x0, x1, b.y, h); cx.fill();
+    cx.strokeStyle = '#fff'; cx.lineWidth = Math.max(1, 2.4 * s); cx.stroke();
   }
 }
 
@@ -1049,22 +1115,28 @@ function drawGame(dt){
   for (let l = 0; l < LANES; l++){
     const f = G.laneFlash[l];
     if (f > 0.01){
-      const a = proj(0), b = proj(0.6);
+      const a = proj(0), b = proj(0.9);
       cx.beginPath();
       cx.moveTo(xAt(l, a.s), a.y); cx.lineTo(xAt(l + 1, a.s), a.y); cx.lineTo(xAt(l + 1, b.s), b.y); cx.lineTo(xAt(l, b.s), b.y); cx.closePath();
       const lg = cx.createLinearGradient(0, a.y, 0, b.y);
-      lg.addColorStop(0, hexA(song.color, f * 0.45)); lg.addColorStop(1, hexA(song.color, 0));
+      lg.addColorStop(0, `rgba(190,245,255,${f * 0.55})`); lg.addColorStop(0.35, hexA(song.color, f * 0.2)); lg.addColorStop(1, hexA(song.color, 0));
       cx.fillStyle = lg; cx.fill();
     }
     G.laneFlash[l] = Math.max(0, f - dt * 4);
   }
 
+  // subtle alternating lane tint
+  for (let l = 0; l < LANES; l += 2){
+    cx.beginPath();
+    cx.moveTo(xAt(l, top.s), top.y); cx.lineTo(xAt(l + 1, top.s), top.y); cx.lineTo(xAt(l + 1, sBot), H); cx.lineTo(xAt(l, sBot), H); cx.closePath();
+    cx.fillStyle = 'rgba(255,255,255,.025)'; cx.fill();
+  }
   // lane lines
   for (let i = 0; i <= LANES; i++){
     cx.beginPath(); cx.moveTo(xAt(i, top.s), top.y); cx.lineTo(xAt(i, sBot), H);
     const edge = i === 0 || i === LANES;
     cx.strokeStyle = edge ? hexA(song.color, 0.75) : i === LANES / 2 ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.1)';
-    cx.lineWidth = edge ? 2.5 : 1.2; cx.stroke();
+    cx.lineWidth = edge ? 2.5 : 1; cx.stroke();
   }
 
   // beat lines
@@ -1078,6 +1150,13 @@ function drawGame(dt){
     cx.lineWidth = 1; cx.stroke();
   }
 
+  // judge zone
+  {
+    const zh = 34 * u + 6, jl = xAt(0, 1), jr = xAt(LANES, 1);
+    const zg = cx.createLinearGradient(0, L.judgeY - zh, 0, L.judgeY + zh);
+    zg.addColorStop(0, 'rgba(255,255,255,0)'); zg.addColorStop(0.5, `rgba(255,255,255,${0.10 + 0.06 * G.beatPulse})`); zg.addColorStop(1, 'rgba(255,255,255,0)');
+    cx.fillStyle = zg; cx.fillRect(jl, L.judgeY - zh, jr - jl, zh * 2);
+  }
   // judge line
   cx.save();
   cx.shadowColor = song.color; cx.shadowBlur = 18 + 14 * G.beatPulse;
@@ -1111,7 +1190,7 @@ function drawGame(dt){
     const n = vis_[i];
     let d = n.state === 1 || n.state === 3 ? 0 : (n.t - now) / vis;
     if (d < -0.18 || d > 1.05) continue;
-    if (n.state === 1){ cx.save(); cx.shadowColor = NOTE_COL.hold[0]; cx.shadowBlur = 20; drawNote(n, 0, false, holdPos(n, now)); cx.restore(); }
+    if (n.state === 1) drawNote(n, 0, false, holdPos(n, now));
     else drawNote(n, d, n.state === 3);
   }
 
@@ -1119,25 +1198,57 @@ function drawGame(dt){
   for (let i = G.fx.length - 1; i >= 0; i--){
     const f = G.fx[i]; f.life += dt;
     if (f.life > f.max){ G.fx.splice(i, 1); continue; }
-    const k = f.life / f.max, a = 1 - k;
+    const k = f.life / f.max, a = 1 - k, ease = 1 - Math.pow(1 - k, 3);
     cx.save();
+    cx.globalCompositeOperation = 'lighter';
+    // light pillar
+    const ph = (f.crit ? 340 : 260) * u * (0.6 + 0.4 * a);
+    const pg = cx.createLinearGradient(0, L.judgeY, 0, L.judgeY - ph);
+    pg.addColorStop(0, hexA(f.col[1], 0.55 * a)); pg.addColorStop(1, hexA(f.col[1], 0));
+    cx.fillStyle = pg; cx.fillRect(f.x - f.w * 0.45 * (1 - k * 0.5), L.judgeY - ph, f.w * 0.9 * (1 - k * 0.5), ph);
+    // flat shockwave ring along the judge line
     cx.globalAlpha = a;
-    cx.strokeStyle = f.col; cx.lineWidth = 3 * u + 1;
-    cx.beginPath(); cx.ellipse(f.x, L.judgeY, f.w * (0.5 + k * 0.5), 14 * u * (1 + k * 2), 0, 0, Math.PI * 2); cx.stroke();
-    if (f.beam){
-      const bg = cx.createLinearGradient(0, L.judgeY, 0, L.judgeY - 260 * u);
-      bg.addColorStop(0, hexA('#ffffff', 0.5 * a)); bg.addColorStop(1, 'rgba(255,255,255,0)');
-      cx.fillStyle = bg; cx.fillRect(f.x - f.w * 0.4, L.judgeY - 260 * u, f.w * 0.8, 260 * u);
+    cx.strokeStyle = f.col[0]; cx.lineWidth = (4 * u + 1) * a + 0.5;
+    cx.beginPath(); cx.ellipse(f.x, L.judgeY, f.w * (0.45 + ease * 0.75), 12 * u * (1 + ease * 2.2), 0, 0, Math.PI * 2); cx.stroke();
+    // spinning diamond burst
+    cx.save(); cx.translate(f.x, L.judgeY); cx.rotate(f.rot + ease * 0.8); cx.scale(1, 0.55);
+    const dr = (f.perfect ? 70 : 52) * u * (0.4 + ease * 0.9);
+    diamond(0, 0, dr); cx.strokeStyle = '#fff'; cx.lineWidth = 3 * u * a + 0.5; cx.stroke();
+    diamond(0, 0, dr * 0.7); cx.strokeStyle = f.col[1]; cx.lineWidth = 5 * u * a + 0.5; cx.stroke();
+    cx.restore();
+    // center flash
+    if (f.perfect || f.crit){
+      const r = (f.crit ? 110 : 80) * u * (0.5 + ease * 0.5);
+      const rg = cx.createRadialGradient(f.x, L.judgeY, 0, f.x, L.judgeY, r);
+      rg.addColorStop(0, `rgba(255,255,255,${0.75 * a})`); rg.addColorStop(0.4, hexA(f.col[1], 0.35 * a)); rg.addColorStop(1, hexA(f.col[1], 0));
+      cx.fillStyle = rg; cx.beginPath(); cx.arc(f.x, L.judgeY, r, 0, Math.PI * 2); cx.fill();
+    }
+    // upward streaks for flicks
+    if (f.flick){
+      cx.strokeStyle = '#fff'; cx.lineWidth = 3 * u * a + 0.5;
+      for (const ox of [-0.25, 0, 0.25]){
+        const sx = f.x + ox * f.w, sy = L.judgeY - 30 * u - ease * 160 * u;
+        cx.beginPath(); cx.moveTo(sx, sy + 60 * u * a); cx.lineTo(sx, sy); cx.stroke();
+      }
     }
     cx.restore();
   }
+  // sparkles (4-point stars)
+  cx.save();
+  cx.globalCompositeOperation = 'lighter';
   for (let i = G.parts.length - 1; i >= 0; i--){
     const p = G.parts[i]; p.life += dt;
     if (p.life > p.max){ G.parts.splice(i, 1); continue; }
-    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 600 * u * dt;
-    cx.globalAlpha = 1 - p.life / p.max; cx.fillStyle = p.col;
-    cx.fillRect(p.x - p.s / 2, p.y - p.s / 2, p.s, p.s);
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 650 * u * dt; p.r = (p.r || 0) + (p.vr || 0) * dt;
+    const a = 1 - p.life / p.max, r = p.s * (0.6 + 0.4 * a);
+    cx.globalAlpha = a; cx.fillStyle = p.col;
+    cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r);
+    cx.beginPath();
+    cx.moveTo(0, -r); cx.quadraticCurveTo(0, 0, r, 0); cx.quadraticCurveTo(0, 0, 0, r);
+    cx.quadraticCurveTo(0, 0, -r, 0); cx.quadraticCurveTo(0, 0, 0, -r); cx.fill();
+    cx.restore();
   }
+  cx.restore();
   cx.globalAlpha = 1;
 
   drawHud(now, u, top);
@@ -1183,14 +1294,22 @@ function drawHud(now, u, top){
   if (G.combo >= 2){
     const ap = G.counts[1] + G.counts[2] + G.counts[3] + G.counts[4] === 0;
     const fc = G.counts[2] + G.counts[3] + G.counts[4] === 0;
-    const sc = 1 + 0.12 * G.comboPulse;
-    cx.save(); cx.translate(L.cx, yC); cx.scale(sc, sc);
-    cx.globalAlpha = 0.92;
-    cx.font = `900 ${Math.round(13 + 6 * u)}px Outfit, sans-serif`; cx.fillStyle = ap ? '#ffe066' : fc ? '#ff9de0' : 'rgba(255,255,255,.75)';
-    cx.fillText('COMBO', 0, -Math.round(46 * u + 10));
-    cx.font = `900 ${Math.round(44 * u + 20)}px Outfit, sans-serif`;
-    cx.fillStyle = ap ? '#ffe066' : fc ? '#ff9de0' : '#fff';
-    cx.shadowColor = song.color; cx.shadowBlur = 16;
+    const sc = 1 + 0.15 * G.comboPulse;
+    const sAt = (yC - L.vanishY) / (L.judgeY - L.vanishY);
+    let xC = xAt(LANES, sAt) + 60 * u + 40;
+    if (xC + 70 > W) xC = L.cx;                         // not enough room: center it
+    cx.save(); cx.translate(xC, yC); cx.scale(sc, sc);
+    const big = Math.round(48 * u + 22);
+    cx.font = `italic 900 ${Math.round(13 + 6 * u)}px Outfit, sans-serif`;
+    cx.fillStyle = ap ? '#ffe066' : fc ? '#ff9de0' : 'rgba(255,255,255,.8)';
+    cx.fillText('COMBO', 0, -big * 0.95);
+    cx.font = `italic 900 ${big}px Outfit, sans-serif`;
+    const cg = cx.createLinearGradient(0, -big, 0, 0);
+    if (ap){ cg.addColorStop(0, '#fffbe0'); cg.addColorStop(1, '#ffc93d'); }
+    else if (fc){ cg.addColorStop(0, '#ffe8f6'); cg.addColorStop(1, '#ff6fbf'); }
+    else { cg.addColorStop(0, '#ffffff'); cg.addColorStop(1, '#c9d4ff'); }
+    cx.lineWidth = 5; cx.strokeStyle = 'rgba(10,12,30,.6)'; cx.strokeText(G.combo, 0, 0);
+    cx.fillStyle = cg; cx.shadowColor = ap ? '#ffc93d' : fc ? '#ff6fbf' : song.color; cx.shadowBlur = 18;
     cx.fillText(G.combo, 0, 0);
     cx.restore();
   }
@@ -1202,9 +1321,17 @@ function drawHud(now, u, top){
       const sc = age < 0.08 ? 0.7 + age / 0.08 * 0.5 : 1.2 - Math.min(0.2, (age - 0.08) * 2);
       cx.save(); cx.translate(L.cx, yJ); cx.scale(sc, sc);
       cx.globalAlpha = age > 0.4 ? 1 - (age - 0.4) / 0.2 : 1;
-      cx.font = `900 ${Math.round(28 * u + 12)}px Outfit, sans-serif`;
-      cx.fillStyle = JUDGE_COLORS[G.lastJudge.j]; cx.shadowColor = JUDGE_COLORS[G.lastJudge.j]; cx.shadowBlur = 14;
-      cx.fillText(JUDGE_NAMES[G.lastJudge.j], 0, 0);
+      const fs = Math.round(30 * u + 13), jn = JUDGE_NAMES[G.lastJudge.j], jw = fs * 3.4;
+      cx.font = `italic 900 ${fs}px Outfit, sans-serif`;
+      let jf;
+      if (G.lastJudge.j === 0){            // rainbow PERFECT
+        jf = cx.createLinearGradient(-jw / 2, 0, jw / 2, 0);
+        jf.addColorStop(0, '#ff8bd8'); jf.addColorStop(0.35, '#ffe066'); jf.addColorStop(0.7, '#7ef0ff'); jf.addColorStop(1, '#b38bff');
+      } else jf = JUDGE_COLORS[G.lastJudge.j];
+      cx.lineJoin = 'round'; cx.lineWidth = Math.max(4, fs * 0.16); cx.strokeStyle = '#fff';
+      cx.shadowColor = G.lastJudge.j === 0 ? '#ff9de0' : JUDGE_COLORS[G.lastJudge.j]; cx.shadowBlur = 16;
+      cx.strokeText(jn, 0, 0);
+      cx.shadowBlur = 0; cx.fillStyle = jf; cx.fillText(jn, 0, 0);
       cx.restore();
     }
   }
