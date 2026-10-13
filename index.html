@@ -79,6 +79,12 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .rCounts div{padding:8px 4px;border-radius:12px;background:rgba(255,255,255,.05)}
 .rCounts b{display:block;font-family:'Outfit';font-size:19px}
 
+.pill2{margin-top:14px;padding:11px 24px;font-size:15px;animation:none;background:rgba(125,255,179,.12);border-color:rgba(125,255,179,.5)}
+.lnum{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-family:'Outfit';font-weight:900;font-size:20px;background:linear-gradient(135deg,var(--sc),var(--sc2));color:#0a0d1f;flex:none}
+.song.locked{opacity:.42}
+.lessonlist{max-height:68vh;overflow-y:auto;padding:2px 6px 2px 2px}
+.ldesc{margin-top:14px;line-height:1.75;font-size:15px;opacity:.92}
+.play:disabled{opacity:.35;filter:grayscale(1);cursor:not-allowed}
 #pauseBtn{position:fixed;top:12px;right:12px;z-index:4;width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);font-weight:900;display:none;font-family:'Outfit'}
 
 @media (max-width:720px){
@@ -99,6 +105,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
   <div class="logo"><span class="l1">PRISM</span><span class="l2">STAGE</span></div>
   <div class="tag">colorful rhythm game · prototype</div>
   <div class="pill">Press <kbd>Enter</kbd> or tap to start</div>
+  <button class="pill pill2" data-act="lessons">📘 New here? Lessons <kbd>L</kbd></button>
   <div class="howto">
     <div>Play with <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> &nbsp; <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> &nbsp;or tap the lanes</div>
     <div class="legend"><span class="n tap"></span>Tap<span class="n hold"></span>Hold<span class="n flick"></span>Flick (swipe up on touch)</div>
@@ -107,7 +114,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 
 <div id="select" class="screen">
   <div class="selwrap">
-    <div class="head">SONG SELECT <button data-act="back">◀ Title</button></div>
+    <div class="head">SONG SELECT <button data-act="back">◀ Title</button><button data-act="lessons">📘 Lessons</button></div>
     <div class="songlist" id="songList"></div>
     <div class="detail">
       <div class="dTitle" id="dTitle"></div>
@@ -123,6 +130,21 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
     </div>
   </div>
   <div class="hints"><kbd>↑</kbd><kbd>↓</kbd> song &nbsp;·&nbsp; <kbd>←</kbd><kbd>→</kbd> difficulty &nbsp;·&nbsp; <kbd>Enter</kbd> play &nbsp;·&nbsp; <kbd>Esc</kbd> pause in game</div>
+</div>
+
+<div id="lessons" class="screen">
+  <div class="selwrap">
+    <div class="head">LESSONS <button data-act="back">◀ Title</button><button data-act="start">Songs ▶</button></div>
+    <div class="songlist lessonlist" id="lessonList"></div>
+    <div class="detail">
+      <div class="dArtist" id="lNum"></div>
+      <div class="dTitle" id="lTitle"></div>
+      <div class="ldesc" id="lDesc"></div>
+      <div class="meta" id="lMeta"></div>
+      <button class="play" data-act="lesson-start" id="lStart">▶ START LESSON</button>
+    </div>
+  </div>
+  <div class="hints"><kbd>↑</kbd><kbd>↓</kbd> lesson &nbsp;·&nbsp; <kbd>Enter</kbd> start &nbsp;·&nbsp; <kbd>Esc</kbd> back</div>
 </div>
 
 <div id="pause" class="screen">
@@ -146,8 +168,8 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
     </div>
     <div class="rCounts" id="rCounts"></div>
     <div class="btns">
-      <button class="btn primary" data-act="select">Song select <kbd>Enter</kbd></button>
-      <button class="btn" data-act="retry">Retry <kbd>R</kbd></button>
+      <button class="btn primary" id="rPrimary" data-act="select">Song select <kbd>Enter</kbd></button>
+      <button class="btn" id="rSecondary" data-act="retry">Retry <kbd>R</kbd></button>
     </div>
   </div>
 </div>
@@ -583,6 +605,151 @@ const bgParts = Array.from({ length: 34 }, () => ({
   r: Math.random() * 6, vr: (Math.random() - .5) * 0.6, c: Math.random() < .5 ? 0 : 1, a: 0.05 + Math.random() * 0.12
 }));
 
+/* ================= LESSONS ================= */
+const N = (b, lane, o = {}) => ({ b, lane, w: o.w || 1, type: o.type || 'tap', len: o.len || 0 });
+const LESSON_COLORS = [['#7dffb3','#4dd9ff'],['#4dd9ff','#7a5cff'],['#ffb347','#ff6f91'],['#ff5fa2','#ffd166'],['#c77dff','#00e5ff']];
+const LESSONS = [
+  { title:'Your First Notes', bpm:80, pass:0.6, easy:true,
+    desc:'Notes slide down the highway toward the glowing line. Press the key the moment a note touches the line.<br><br>Rest your left pointer finger on <kbd>F</kbd> and your right one on <kbd>J</kbd>. They have little bumps so you can find them without looking.',
+    hint:'Press F or J right as the note touches the line',
+    notes(){ const a = []; for (let i = 0; i < 8; i++) a.push(N(4 + i*2, 2)); for (let i = 0; i < 8; i++) a.push(N(20 + i*2, 3)); return a; } },
+  { title:'Left and Right', bpm:90, pass:0.7, easy:true,
+    desc:'Now the notes swap sides every beat. Left middle lane is <kbd>F</kbd>, right middle lane is <kbd>J</kbd>.<br><br>Listen to the drums. The notes land exactly on the beat, so you can tap along to the music.',
+    hint:'Alternate F and J with the beat',
+    notes(){ const a = []; for (let i = 0; i < 24; i++) a.push(N(4 + i, i % 2 ? 3 : 2)); return a; } },
+  { title:'All Six Lanes', bpm:90, pass:0.7, easy:true,
+    desc:'The full highway has six lanes: <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> for your left hand and <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> for your right.<br><br>Keep three fingers of each hand resting on the keys so you never have to look down.',
+    hint:'Left hand S D F  ·  right hand J K L',
+    notes(){ const seq = [0,1,2,3,4,5,4,3,2,1], a = []; for (let i = 0; i < 30; i++) a.push(N(4 + i, seq[i % seq.length])); return a; } },
+  { title:'Hold Notes', bpm:90, pass:0.7,
+    desc:'Green notes with a long tail are <b>hold notes</b>. Press the key when the head reaches the line and <b>keep holding</b> until the tail ends.<br><br>Letting go too early counts as a miss.',
+    hint:'Keep the key held down until the green tail ends',
+    notes(){ const a = []; for (let k = 0; k < 8; k++){ const b = 4 + k*4; a.push(N(b, k % 2 ? 3 : 2, { type:'hold', len:2 })); a.push(N(b + 3, k % 2 ? 1 : 4)); } return a; } },
+  { title:'Flick Notes', bpm:100, pass:0.75,
+    desc:'Pink notes with an arrow are <b>flick notes</b>.<br><br>On a keyboard, just press them like a normal note. On a touchscreen, tap and quickly <b>swipe up</b>.',
+    hint:'Pink arrow = flick (keyboard: just press it)',
+    notes(){ const a = [], lanes = [1,2,3,4]; for (let k = 0; k < 8; k++){ const b = 4 + k*4; for (let j = 0; j < 3; j++) a.push(N(b + j, lanes[(k + j) % 4])); a.push(N(b + 3, k % 2 ? 4 : 1, { type:'flick' })); } return a; } },
+  { title:'Wide Notes', bpm:100, pass:0.75,
+    desc:'Some notes are <b>wide</b> and stretch across two lanes.<br><br>You can hit them with <b>either</b> key underneath. You don\'t need to press both.',
+    hint:'Wide notes: press any one key underneath',
+    notes(){ const a = [], wl = [0,2,4,2]; for (let k = 0; k < 12; k++){ const b = 4 + k*2; a.push(N(b, wl[k % 4], { w:2 })); a.push(N(b + 1, k % 2 ? 1 : 4)); } return a; } },
+  { title:'Chords', bpm:100, pass:0.75,
+    desc:'When two notes arrive <b>at the same time</b>, press both keys together.<br><br>They come in mirrored pairs: <kbd>F</kbd>+<kbd>J</kbd>, <kbd>D</kbd>+<kbd>K</kbd>, <kbd>S</kbd>+<kbd>L</kbd>.',
+    hint:'Two notes side by side = press both at once',
+    notes(){ const a = [], pairs = [[2,3],[1,4],[0,5],[1,4]]; for (let k = 0; k < 12; k++){ const b = 4 + k*2, p = pairs[k % 4]; a.push(N(b, p[0])); a.push(N(b, p[1])); a.push(N(b + 1, k % 2 ? 2 : 3)); } return a; } },
+  { title:'Double Time', bpm:110, pass:0.75,
+    desc:'Time to speed up! Some notes now come <b>twice per beat</b>.<br><br>Bounce between two fingers instead of hitting the same key twice. It\'s much easier.',
+    hint:'Two notes per beat: alternate your fingers',
+    notes(){ const a = [], pr = [[2,3],[1,4],[2,3],[0,5]]; for (let k = 0; k < 8; k++){ const b = 4 + k*4, p = pr[k % 4]; for (let j = 0; j < 4; j++) a.push(N(b + j*0.5, p[j % 2])); a.push(N(b + 2, k % 2 ? 0 : 5)); a.push(N(b + 3, k % 2 ? 4 : 1)); } return a; } },
+  { title:'Mix It Up', bpm:120, pass:0.8,
+    desc:'Everything you\'ve learned, all together: taps, holds, flicks, wide notes and chords.<br><br>Stay relaxed and read the notes a little ahead of the line.',
+    hint:'Read ahead: watch the notes coming, not the line',
+    notes(){ const a = []; for (let k = 0; k < 8; k++){ const b = 4 + k*4;
+      if (k % 4 === 0){ a.push(N(b, 2, { type:'hold', len:1.5 })); a.push(N(b + 1, 4)); a.push(N(b + 2, 5)); a.push(N(b + 3, 3, { type:'flick' })); }
+      else if (k % 4 === 1){ a.push(N(b, 1)); a.push(N(b, 4)); a.push(N(b + 1, 2)); a.push(N(b + 1.5, 3)); a.push(N(b + 2, 2, { w:2 })); a.push(N(b + 3, 0)); }
+      else if (k % 4 === 2){ for (let j = 0; j < 4; j++) a.push(N(b + j*0.5, j)); a.push(N(b + 2, 5, { type:'hold', len:1 })); a.push(N(b + 3, 0, { type:'flick' })); }
+      else { a.push(N(b, 0)); a.push(N(b, 5)); a.push(N(b + 1, 2)); a.push(N(b + 1, 3)); a.push(N(b + 2, 1, { w:2 })); a.push(N(b + 3, 2, { w:2, type:'flick' })); } }
+      return a; } },
+  { title:'Stairs', bpm:130, pass:0.8,
+    desc:'A <b>stream</b> is a long run of fast notes. These ones walk up and down the lanes like stairs.<br><br>Let your fingers roll across the keys: S D F J K L, then back down.',
+    hint:'Roll your fingers across the keys like stairs',
+    notes(){ const seq = [0,1,2,3,4,5,4,3,2,1], a = []; let c = 0; for (let i = 0; i < 64; i++){ if (i % 16 >= 14) continue; a.push(N(4 + i*0.5, seq[c++ % seq.length])); } return a; } },
+  { title:'Graduation', song:1, diff:2, pass:0.8,
+    desc:'Final exam! Play a real song: <b>Neon Skyline</b> on <b>NORMAL</b>.<br><br>Hit 80% of the notes to graduate. After that, the whole song list is yours. Good luck!',
+    hint:'Final exam: hit 80% of the notes to graduate' },
+];
+
+function makeLessonGen(i){
+  const Ls = LESSONS[i], pal = LESSON_COLORS[i % LESSON_COLORS.length];
+  const song = { id:'lesson' + i, title:Ls.title, bpm:Ls.bpm, color:pal[0], color2:pal[1], levels:[] };
+  const step = 60 / Ls.bpm / 4, beat = 4 * step;
+  const raw = Ls.notes();
+  const lastB = Math.max(...raw.map(n => n.b + n.len));
+  const bars = Math.ceil((lastB + 2) / 4) + 1;
+  const sc = SCALES.major, deg = d => 60 + sc[((d % 7) + 7) % 7] + 12 * Math.floor(d / 7);
+  const prog = [0,5,3,4], audio = [];
+  for (let bar = 0; bar < bars; bar++){
+    const T = s => (bar * 16 + s) * step, c = prog[bar % 4];
+    audio.push({ t:T(0), type:'pad', notes:[deg(c), deg(c+2), deg(c+4)], dur:16 * step * 0.98, vol:0.7 });
+    [0, 8].forEach(s => audio.push({ t:T(s), type:'kick' }));
+    if (bar > 0) [4, 12].forEach(s => audio.push({ t:T(s), type:'snare', vol:0.45 }));
+    [2, 6, 10, 14].forEach(s => audio.push({ t:T(s), type:'hat' }));
+    audio.push({ t:T(0), type:'bass', midi:deg(c) - 24, dur:7 * step }, { t:T(8), type:'bass', midi:deg(c) - 24, dur:7 * step });
+  }
+  // a little "pluck" on every note so you can hear when to press
+  for (const n of raw) audio.push({ t:n.b * beat, type:'lead', midi:deg(n.lane + 7), dur:Math.max(0.12, n.len * beat * 0.9) });
+  audio.sort((a, b) => a.t - b.t);
+  const notes = raw.map(n => ({ t:n.b * beat, lane:n.lane, w:n.w, type:n.type, end:n.type === 'hold' ? (n.b + n.len) * beat : 0 }));
+  notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
+  return { song, step, beat, audio, notes, duration:bars * 16 * step + 1, charts:[] };
+}
+
+let lsel = 0, lastLesson = null;
+function lessonsUnlocked(){ return clamp(store.get('lessons_unlocked', 1), 1, LESSONS.length); }
+function showLessons(){
+  initAudio();
+  lsel = Math.min(lsel, LESSONS.length - 1);
+  showScreen('lessons'); renderLessons(); sfx('blip');
+}
+function renderLessons(){
+  const un = lessonsUnlocked(), passed = store.get('lessons_passed', []);
+  $('lessonList').innerHTML = LESSONS.map((Ls, i) => {
+    const pal = LESSON_COLORS[i % LESSON_COLORS.length], locked = i >= un, done = passed.includes(i);
+    const status = done ? '✓ Passed' : locked ? '🔒 Locked' : 'Ready';
+    return `<button class="song ${i === lsel ? 'on' : ''} ${locked ? 'locked' : ''}" data-lesson="${i}" style="--sc:${pal[0]};--sc2:${pal[1]}">
+      <span class="lnum">${i + 1}</span><span class="st"><b>${Ls.title}</b><small>${status}</small></span></button>`;
+  }).join('');
+  const Ls = LESSONS[lsel], pal = LESSON_COLORS[lsel % LESSON_COLORS.length], locked = lsel >= un;
+  document.documentElement.style.setProperty('--c', pal[0]);
+  document.documentElement.style.setProperty('--c2', pal[1]);
+  $('lNum').textContent = `LESSON ${lsel + 1} OF ${LESSONS.length}` + (Ls.bpm ? ` · ${Ls.bpm} BPM` : '');
+  $('lTitle').textContent = Ls.title;
+  $('lDesc').innerHTML = Ls.desc;
+  $('lMeta').innerHTML = `<span>Pass: hit ${Math.round(Ls.pass * 100)}% of notes</span><span>${passed.includes(lsel) ? '✓ Passed' : ''}</span>`;
+  const btn = $('lStart');
+  btn.disabled = locked;
+  btn.textContent = locked ? '🔒 Pass the lesson before this one' : '▶ START LESSON';
+  const on = document.querySelector('#lessonList .song.on');
+  if (on && on.scrollIntoView) on.scrollIntoView({ block:'nearest' });
+}
+
+function showLessonResults(){
+  const G = game, i = G.lesson, Ls = LESSONS[i];
+  const hits = G.counts[0] + G.counts[1] + G.counts[2];
+  const rate = G.total ? hits / G.total : 0;
+  const pass = rate >= Ls.pass && !G.auto;
+  const last = i === LESSONS.length - 1;
+  if (pass){
+    if (i + 2 > lessonsUnlocked()) store.set('lessons_unlocked', Math.min(LESSONS.length, i + 2));
+    const d = store.get('lessons_passed', []);
+    if (!d.includes(i)){ d.push(i); store.set('lessons_passed', d); }
+  }
+  $('rTitle').textContent = Ls.title;
+  $('rSub').textContent = `LESSON ${i + 1}` + (G.auto ? ' · AUTO' : '');
+  $('rRank').textContent = pass ? '✓' : '✗';
+  const b = $('rBadge');
+  b.textContent = pass ? (last ? 'GRADUATED! 🎓' : 'LESSON PASSED') : 'NOT YET';
+  b.className = 'rBadge ' + (pass ? 'ap' : 'fail');
+  $('rScore').textContent = Math.round(rate * 100) + '% hits';
+  const bestEl = $('rBest');
+  bestEl.textContent = G.auto ? 'Auto play doesn\'t count. Turn it off to pass.' : pass ? (last ? 'You finished every lesson. Go play some songs!' : 'Next lesson unlocked!') : `Need ${Math.round(Ls.pass * 100)}% to pass. You can do it!`;
+  bestEl.className = 'rBest' + (pass ? ' new' : '');
+  $('rCounts').innerHTML = JUDGE_NAMES.map((n, k) => `<div><span style="color:${JUDGE_COLORS[k]}">${n}</span><b>${G.counts[k]}</b></div>`).join('') + `<div><span>MAX COMBO</span><b>${G.maxCombo}</b></div>`;
+  const p = $('rPrimary'), s2 = $('rSecondary');
+  if (pass && !last){ p.dataset.act = 'next'; p.innerHTML = 'Next lesson <kbd>Enter</kbd>'; }
+  else if (pass){ p.dataset.act = 'start'; p.innerHTML = 'Song select <kbd>Enter</kbd>'; }
+  else { p.dataset.act = 'retry'; p.innerHTML = 'Try again <kbd>Enter</kbd>'; }
+  if (pass){ s2.dataset.act = 'retry'; s2.innerHTML = 'Replay <kbd>R</kbd>'; }
+  else { s2.dataset.act = 'menu'; s2.innerHTML = 'Back to lessons <kbd>Esc</kbd>'; }
+  game = null;
+  showScreen('result');
+}
+function backToMenu(){
+  if (game) stopMusic();
+  game = null;
+  if (lastLesson != null) showLessons(); else { showScreen('select'); renderSelect(); }
+}
+
 /* ================= GAME STATE ================= */
 let screen = 'title';
 const sel = { song: 0, diff: 0 };
@@ -595,17 +762,29 @@ function songNow(){
   return AC.currentTime - lat - game.t0 - settings.offset / 1000;
 }
 
-function startGame(){
+function startGame(lessonIdx){
+  if (lessonIdx === undefined) lessonIdx = null;
+  lastLesson = lessonIdx;
   initAudio();
   if (game) stopMusic();
   AC.resume();
-  const g = getGen(sel.song, sel.diff);
-  const notes = getChart(sel.song, sel.diff).map((n, i) => ({ ...n, state: 0, id: i }));
+  let g, src, song, diff = sel.diff, label, labelColor, hint = '', lesson = null;
+  if (lessonIdx != null){
+    lesson = LESSONS[lessonIdx];
+    if (lesson.song != null){ diff = lesson.diff; g = getGen(lesson.song, diff); src = getChart(lesson.song, diff); song = SONGS[lesson.song]; }
+    else { g = makeLessonGen(lessonIdx); src = g.notes; song = g.song; diff = -1; }
+    label = 'LESSON ' + (lessonIdx + 1); labelColor = '#7dffb3'; hint = lesson.hint;
+  } else {
+    g = getGen(sel.song, sel.diff); src = getChart(sel.song, sel.diff); song = SONGS[sel.song];
+    label = DIFFS[diff].name; labelColor = DIFFS[diff].color;
+  }
+  const notes = src.map((n, i) => ({ ...n, state: 0, id: i }));
   const total = notes.reduce((a, n) => a + (n.type === 'hold' ? 2 : 1), 0);
   const bus = AC.createGain(); bus.connect(master); OUT = bus;
   game = {
-    song: SONGS[sel.song], diff: sel.diff, gen: g, notes, total, bus,
-    t0: AC.currentTime + LEADIN, audioIdx: 0, first: 0, win: sel.diff === 0 ? BEGINNER_WIN : WIN,
+    song, diff, gen: g, notes, total, bus, lesson: lessonIdx, label, labelColor, hint,
+    noFail: diff === 0 || lessonIdx != null,
+    t0: AC.currentTime + LEADIN, audioIdx: 0, first: 0, win: (diff === 0 || (lesson && lesson.easy)) ? BEGINNER_WIN : WIN,
     score: 0, combo: 0, maxCombo: 0, life: 1000, counts: [0,0,0,0,0],
     fx: [], parts: [], lastJudge: null, laneFlash: new Array(LANES).fill(0),
     paused: false, ended: false, failed: false, auto: settings.auto,
@@ -618,8 +797,8 @@ function stopMusic(){
   if (game && game.bus){ try { game.bus.disconnect(); } catch(e){} }
   if (AC && AC.state === 'suspended') AC.resume();
 }
-function retry(){ startGame(); }
-function quit(){ stopMusic(); game = null; showScreen('select'); renderSelect(); }
+function retry(){ startGame(lastLesson); }
+function quit(){ backToMenu(); }
 function pauseGame(){
   if (!game || game.paused || game.ended) return;
   game.paused = true; AC.suspend(); showScreen('pause');
@@ -664,7 +843,7 @@ function judge(n, j, tail){
     spawnHit(n, j);
     sfx(n.type === 'flick' && !tail ? 'flick' : 'tap');
   }
-  if (G.diff === 0) G.life = Math.max(G.life, 1); // Beginner can't fail
+  if (G.noFail) G.life = Math.max(G.life, 1); // Beginner and lessons can't fail
   if (G.life <= 0 && !G.ended){ G.life = 0; G.failed = true; endGame(); }
 }
 
@@ -923,8 +1102,15 @@ function drawHud(now, u, top){
   cx.textAlign = 'left';
   cx.font = '800 15px "M PLUS Rounded 1c", sans-serif'; cx.fillStyle = '#fff';
   cx.fillText(song.title, 16, 30);
-  cx.font = '900 11px Outfit, sans-serif'; cx.fillStyle = DIFFS[G.diff].color;
-  cx.fillText(DIFFS[G.diff].name + (G.auto ? '  ·  AUTO' : ''), 16, 46);
+  cx.font = '900 11px Outfit, sans-serif'; cx.fillStyle = G.labelColor;
+  cx.fillText(G.label + (G.auto ? '  ·  AUTO' : ''), 16, 46);
+  if (G.hint){
+    cx.font = '700 14px "M PLUS Rounded 1c", sans-serif';
+    const tw = Math.min(W - 24, cx.measureText(G.hint).width);
+    cx.fillStyle = 'rgba(10,12,30,.75)'; rr(L.cx - tw / 2 - 14, H - 42, tw + 28, 30, 15); cx.fill();
+    cx.fillStyle = '#fff'; cx.textAlign = 'center'; cx.fillText(G.hint, L.cx, H - 22, W - 24);
+    cx.textAlign = 'left';
+  }
   const lw = Math.min(180, W * 0.35);
   cx.fillStyle = 'rgba(255,255,255,.12)'; rr(16, 54, lw, 8, 4); cx.fill();
   const lf = G.life / 1000;
@@ -1013,6 +1199,9 @@ function renderSelect(){
 
 function showResults(){
   const G = game;
+  if (G.lesson != null) return showLessonResults();
+  $('rPrimary').dataset.act = 'select'; $('rPrimary').innerHTML = 'Song select <kbd>Enter</kbd>';
+  $('rSecondary').dataset.act = 'retry'; $('rSecondary').innerHTML = 'Retry <kbd>R</kbd>';
   const sc = Math.round(G.score);
   const rank = G.failed ? 'F' : sc >= 900000 ? 'S' : sc >= 800000 ? 'A' : sc >= 650000 ? 'B' : sc >= 500000 ? 'C' : 'D';
   const fc = !G.failed && G.counts[2] + G.counts[3] + G.counts[4] === 0;
@@ -1041,7 +1230,7 @@ function act(a){
   switch (a){
     case 'start': goSelect(); break;
     case 'back': showScreen('title'); break;
-    case 'play': startGame(); break;
+    case 'play': startGame(null); break;
     case 'spd-': settings.speed = Math.max(1, settings.speed - 1); store.set('speed', settings.speed); renderSelect(); sfx('blip'); break;
     case 'spd+': settings.speed = Math.min(12, settings.speed + 1); store.set('speed', settings.speed); renderSelect(); sfx('blip'); break;
     case 'off-': settings.offset = Math.max(-300, settings.offset - 5); store.set('offset', settings.offset); renderSelect(); break;
@@ -1052,17 +1241,22 @@ function act(a){
     case 'retry': retry(); break;
     case 'quit': quit(); break;
     case 'select': if (game) stopMusic(); game = null; showScreen('select'); renderSelect(); break;
+    case 'lessons': showLessons(); break;
+    case 'lesson-start': if (lsel < lessonsUnlocked()) startGame(lsel); break;
+    case 'next': lsel = Math.min(LESSONS.length - 1, lastLesson + 1); startGame(lsel); break;
+    case 'menu': backToMenu(); break;
   }
 }
 
 /* ================= INPUT ================= */
 document.addEventListener('click', e => {
-  const b = e.target.closest('[data-act],[data-song],[data-diff]');
+  const b = e.target.closest('[data-act],[data-song],[data-diff],[data-lesson]');
   if (!b) return;
   initAudio();
   if (b.blur) b.blur();
   if (b.dataset.song != null){ sel.song = +b.dataset.song; renderSelect(); sfx('blip'); }
   else if (b.dataset.diff != null){ sel.diff = +b.dataset.diff; renderSelect(); sfx('blip'); }
+  else if (b.dataset.lesson != null){ lsel = +b.dataset.lesson; renderLessons(); sfx('blip'); }
   else act(b.dataset.act);
 });
 
@@ -1080,14 +1274,24 @@ addEventListener('keydown', e => {
     return;
   }
   if (e.repeat && (k === 'enter' || k === ' ')) return;
-  if (screen === 'title'){ if (k === 'enter' || k === ' ') goSelect(); }
+  if (screen === 'title'){ if (k === 'enter' || k === ' ') goSelect(); else if (k === 'l') showLessons(); }
+  else if (screen === 'lessons'){
+    switch (k){
+      case 'arrowup': case 'arrowleft': lsel = Math.max(0, lsel - 1); renderLessons(); sfx('blip'); break;
+      case 'arrowdown': case 'arrowright': lsel = Math.min(LESSONS.length - 1, lsel + 1); renderLessons(); sfx('blip'); break;
+      case 'enter': case ' ': act('lesson-start'); break;
+      case 'a': settings.auto = !settings.auto; sfx('blip'); break;
+      case 'escape': showScreen('title'); break;
+    }
+  }
   else if (screen === 'select'){
     switch (k){
       case 'arrowup': sel.song = (sel.song + SONGS.length - 1) % SONGS.length; renderSelect(); sfx('blip'); break;
       case 'arrowdown': sel.song = (sel.song + 1) % SONGS.length; renderSelect(); sfx('blip'); break;
       case 'arrowleft': sel.diff = Math.max(0, sel.diff - 1); renderSelect(); sfx('blip'); break;
       case 'arrowright': sel.diff = Math.min(DIFFS.length - 1, sel.diff + 1); renderSelect(); sfx('blip'); break;
-      case 'enter': case ' ': startGame(); break;
+      case 'enter': case ' ': startGame(null); break;
+      case 'l': showLessons(); break;
       case '-': case '_': act('spd-'); break;
       case '=': case '+': act('spd+'); break;
       case '[': act('off-'); break;
@@ -1102,8 +1306,9 @@ addEventListener('keydown', e => {
     else if (k === 'q') quit();
   }
   else if (screen === 'result'){
-    if (k === 'enter' || k === ' ') act('select');
+    if (k === 'enter' || k === ' ') act($('rPrimary').dataset.act);
     else if (k === 'r') retry();
+    else if (k === 'escape') backToMenu();
   }
 });
 addEventListener('keyup', e => {
