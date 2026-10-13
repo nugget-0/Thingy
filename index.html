@@ -44,9 +44,9 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .detail{padding:22px;border-radius:24px;background:rgba(12,14,34,.74);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .dTitle{font-size:clamp(24px,4vw,34px);font-weight:900;line-height:1.15}
 .dArtist{opacity:.65;margin-top:4px;font-size:14px}
-.diffs{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:18px}
+.diffs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:18px}
 .diff{padding:10px 4px 8px;border-radius:14px;border:2px solid rgba(255,255,255,.13);background:rgba(255,255,255,.04);display:flex;flex-direction:column;align-items:center;transition:.15s}
-.diff small{font-size:8.5px;font-weight:900;letter-spacing:.08em;color:var(--dc)}
+.diff small{font-size:10px;font-weight:900;letter-spacing:.08em;color:var(--dc)}
 .diff b{font-size:26px;font-family:'Outfit';line-height:1.1}
 .diff.on{border-color:var(--dc);background:rgba(255,255,255,.13);box-shadow:0 0 20px -5px var(--dc)}
 .meta{display:flex;justify-content:space-between;gap:10px;margin-top:12px;opacity:.8;font-size:13.5px}
@@ -170,14 +170,16 @@ const DIFFS = [
   { name:'HARD',   color:'#ffc94d' },
   { name:'EXPERT', color:'#ff5577' },
   { name:'MASTER', color:'#c77dff' },
+  { name:'INSANE', color:'#ff2d2d' },
 ];
+const INSANE = 6, INSANE_MULT = 50;
 const SONGS = [
-  { id:'firststeps', title:'First Steps',         artist:'Prism Stage Original', bpm:100, root:60, mode:'major', prog:[0,3,4,0], seed:5,  color:'#7dffb3', color2:'#4dd9ff', levels:[1,3,8,14,20,24] },
-  { id:'neon',      title:'Neon Skyline',         artist:'Prism Stage Original', bpm:150, root:57, mode:'minor', prog:[0,5,2,6], seed:11, color:'#4dd9ff', color2:'#7a5cff', levels:[2,6,13,20,26,30] },
-  { id:'lantern',   title:'Paper Lantern Parade', artist:'Prism Stage Original', bpm:128, root:60, mode:'major', prog:[0,4,5,3], seed:23, color:'#ffb347', color2:'#ff6f91', levels:[2,5,11,18,24,28] },
-  { id:'afterglow', title:'Afterglow Circuit',    artist:'Prism Stage Original', bpm:172, root:62, mode:'minor', prog:[5,6,0,4], seed:37, color:'#ff5fa2', color2:'#ffd166', levels:[3,8,15,23,29,33] },
-  { id:'overclock',  title:'Overclock Requiem',    artist:'Prism Stage Original', bpm:196, root:59, mode:'minor', prog:[0,6,5,4], seed:61, color:'#ff3b3b', color2:'#7a00ff', levels:[4,10,18,26,31,35] },
-  { id:'hyperdrive', title:'Hyperdrive Heartbeat', artist:'Prism Stage Original', bpm:222, root:64, mode:'minor', prog:[5,3,0,4], seed:83, color:'#c77dff', color2:'#00e5ff', levels:[5,12,21,28,33,37] },
+  { id:'firststeps', title:'First Steps',         artist:'Prism Stage Original', bpm:100, root:60, mode:'major', prog:[0,3,4,0], seed:5,  color:'#7dffb3', color2:'#4dd9ff', levels:[1,3,8,14,20,24,'∞'] },
+  { id:'neon',      title:'Neon Skyline',         artist:'Prism Stage Original', bpm:150, root:57, mode:'minor', prog:[0,5,2,6], seed:11, color:'#4dd9ff', color2:'#7a5cff', levels:[2,6,13,20,26,30,'∞'] },
+  { id:'lantern',   title:'Paper Lantern Parade', artist:'Prism Stage Original', bpm:128, root:60, mode:'major', prog:[0,4,5,3], seed:23, color:'#ffb347', color2:'#ff6f91', levels:[2,5,11,18,24,28,'∞'] },
+  { id:'afterglow', title:'Afterglow Circuit',    artist:'Prism Stage Original', bpm:172, root:62, mode:'minor', prog:[5,6,0,4], seed:37, color:'#ff5fa2', color2:'#ffd166', levels:[3,8,15,23,29,33,'∞'] },
+  { id:'overclock',  title:'Overclock Requiem',    artist:'Prism Stage Original', bpm:196, root:59, mode:'minor', prog:[0,6,5,4], seed:61, color:'#ff3b3b', color2:'#7a00ff', levels:[4,10,18,26,31,35,'∞'] },
+  { id:'hyperdrive', title:'Hyperdrive Heartbeat', artist:'Prism Stage Original', bpm:222, root:64, mode:'minor', prog:[5,3,0,4], seed:83, color:'#c77dff', color2:'#00e5ff', levels:[5,12,21,28,33,37,'∞'] },
 ];
 const BEGINNER_WIN = { perfect:0.07, great:0.13, good:0.19, bad:0.25 };
 const BARS = 32;
@@ -464,8 +466,12 @@ function buildChart(G, level){
 }
 
 const genCache = {};
-function getGen(i){ return genCache[i] || (genCache[i] = generateSong(SONGS[i])); }
-function getChart(i, d){ const g = getGen(i); return g.charts[d] || (g.charts[d] = buildChart(g, d)); }
+// INSANE plays the whole song at 50x the BPM
+function getGen(i, d){
+  if (d === INSANE){ const k = i + 'x' + INSANE_MULT; return genCache[k] || (genCache[k] = generateSong({ ...SONGS[i], bpm: SONGS[i].bpm * INSANE_MULT })); }
+  return genCache[i] || (genCache[i] = generateSong(SONGS[i]));
+}
+function getChart(i, d){ const g = getGen(i, d); return g.charts[d] || (g.charts[d] = d === INSANE ? buildMasterChart(g) : buildChart(g, d)); }
 
 /* ================= AUDIO ================= */
 let AC = null, master = null, sfxGain = null, noiseBuf = null, OUT = null;
@@ -593,7 +599,7 @@ function startGame(){
   initAudio();
   if (game) stopMusic();
   AC.resume();
-  const g = getGen(sel.song);
+  const g = getGen(sel.song, sel.diff);
   const notes = getChart(sel.song, sel.diff).map((n, i) => ({ ...n, state: 0, id: i }));
   const total = notes.reduce((a, n) => a + (n.type === 'hold' ? 2 : 1), 0);
   const bus = AC.createGain(); bus.connect(master); OUT = bus;
