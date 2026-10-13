@@ -88,6 +88,9 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .song.cross{border-color:rgba(255,209,102,.45);background:linear-gradient(90deg,rgba(255,209,102,.12),rgba(255,255,255,.04))}
 .song.cross .st small{color:#ffd166;opacity:.9}
 .meta{flex-wrap:wrap}
+.song.boss.hype.omega{border-color:#fff;background:linear-gradient(90deg,rgba(255,45,45,.2),rgba(255,209,102,.12),rgba(125,255,179,.12),rgba(77,217,255,.18));animation:omegaPulse 1s linear infinite}
+.song.boss.hype.omega .st b{color:#fff;letter-spacing:.08em}
+@keyframes omegaPulse{0%{box-shadow:0 0 22px -4px #ff2d2d}33%{box-shadow:0 0 22px -4px #ffd166}66%{box-shadow:0 0 22px -4px #4dd9ff}100%{box-shadow:0 0 22px -4px #ff2d2d}}
 .song.boss.hype{border-color:rgba(0,240,255,.6);background:linear-gradient(90deg,rgba(0,240,255,.16),rgba(255,0,170,.12));animation:hypePulse 1.2s ease-in-out infinite}
 .song.boss.hype .st b{color:#7ef9ff}
 @keyframes hypePulse{50%{box-shadow:0 0 28px -4px #00f0ff}}
@@ -319,6 +322,7 @@ const SONGS = [
   { id:'spaghetti',   title:'Spaghetti Junction', artist:'Prism Stage Original', bpm:196, root:59, mode:'minor', prog:[0,6,5,4], seed:347, color:'#ff5fa2', color2:'#b6f36b', levels:[4,11,19,27,32,38,'∞'], cross:true, roads:3 },
   { id:'prismbreaker', title:'PRISM BREAKER', artist:'Prism Stage Original', bpm:200, root:58, mode:'minor', prog:[0,5,6,4], seed:999, color:'#ff1f5a', color2:'#ffffff', levels:[5,12,20,28,33,'50','∞'], boss:true },
   { id:'terminal',    title:'TERMINAL VELOCITY',  artist:'Prism Stage Original', bpm:400, root:57, mode:'minor', prog:[5,3,6,0], seed:4000, color:'#00f0ff', color2:'#ff00aa', levels:[7,16,25,33,40,'60','∞'], hype:true, long:true },
+  { id:'omega',       title:'OMEGA JUNCTION',     artist:'Prism Stage Original', bpm:360, root:55, mode:'minor', prog:[0,5,6,4], seed:7777, color:'#ffffff', color2:'#ff2d2d', levels:[8,18,27,35,43,'70','∞'], hype:true, long:true, cross:true, roads:5, omega:true },
 ];
 const BEGINNER_WIN = { perfect:0.07, great:0.13, good:0.19, bad:0.25 };
 const LEADIN = 2.2;
@@ -748,7 +752,7 @@ function buildHypeChart(G){
     const t0 = T(bar, 0), t1 = T(bar + 1, 0);
 
     if (sec === 'intro'){
-      if (rel === 0){ banner(t0, 'TERMINAL VELOCITY', '#00f0ff'); ev({ kind:'flash', t0 }); }
+      if (rel === 0){ banner(t0, G.song.title, G.song.omega ? '#ff2d2d' : '#00f0ff'); ev({ kind:'flash', t0 }); }
       if (rel < 4) [0, 8].forEach((s, i) => put(T(bar, s), (rel + i) % 2 ? 3 : 0, { w:3, type:'flick', crit: s === 0 && rel === 0 }));
       else if (rel < 7) for (let s = 0; s < 16; s += 2) put(T(bar, s), rel < 6 ? (s % 4 ? 3 : 2) : (s % 4 ? 4 : 1));
       else { for (let s = 0; s < 12; s += 2) put(T(bar, s), s % 4 ? 3 : 2); [0,1,2,3].forEach((l, i) => put(T(bar, 12 + i), l)); }
@@ -758,7 +762,11 @@ function buildHypeChart(G){
       const q = Math.floor(rel / 2) % 4;
       if (rel === 0) banner(t0, ['STREAM', 'STREAM II', 'STREAM III', 'STREAM IV', 'LAST STREAM'][round], '#7ef0ff');
       if (q === 3 && rel % 2 === 0) put(t0, 0, { type:'hold', end:T(bar + 1, 8), to:2 });
-      for (let s = 0; s < 16; s += 2){
+      if (G.song.omega && q === 2){                           // 3-against-4 polyrhythm
+        if (rel % 8 === 4) banner(t0, 'POLYRHYTHM', '#7ef0ff');
+        for (let s = 0; s < 16; s += 3) put(T(bar, s), [0,1,2][(s / 3) % 3]);
+        for (let s = 0; s < 16; s += 2) put(T(bar, s), [5,4,3,4][(s / 2) % 4]);
+      } else for (let s = 0; s < 16; s += 2){
         if (round === 0 && s % 8 === 6) continue;              // first round leaves small gaps
         const k = (rel * 8 + s / 2);
         const l = q === 0 ? [0,1,2,3,4,5,4,3,2,1][k % 10] : q === 1 ? [0,5,1,4,2,3,1,4][k % 8] : q === 2 ? [1,3,2,4][k % 4] : [3,4,5,4][k % 4];
@@ -778,7 +786,8 @@ function buildHypeChart(G){
         const st = [0,1,2,3,4,5,4,3,2,1,0,1,2,3,4,5];
         for (let s = 0; s < 16; s++) put(T(bar, s), st[s]);
       } else {
-        for (let s = 0; s < 8; s++) put(T(bar, s), 5 - (s % 6));
+        if (G.song.omega){ banner(t0, 'GLISSANDO', '#c77dff'); for (let b = 0; b < 2; b++) for (let k = 0; k < 6; k++) put(T(bar, b * 4) + k * beat / 6, b ? 5 - k : k); }
+        else for (let s = 0; s < 8; s++) put(T(bar, s), 5 - (s % 6));
         chord(T(bar, 8), [0,1,4,5], { crit:true });
       }
     }
@@ -817,7 +826,7 @@ function buildHypeChart(G){
     }
 
     else if (sec === 'outro'){
-      if (last){ put(t0, 0, { w:6, type:'flick', crit:true }); ev({ kind:'flash', t0 }); banner(t0, 'TERMINAL VELOCITY · CLEAR', '#ffffff'); }
+      if (last){ put(t0, 0, { w:6, type:'flick', crit:true }); ev({ kind:'flash', t0 }); banner(t0, G.song.title + ' · CLEAR', '#ffffff'); }
       else if (rel === 0){ put(t0, 0, { type:'hold', end:T(bar + 2, 0), to:2 }); put(t0, 5, { type:'hold', end:T(bar + 2, 0), to:3 }); }
       else if (rel < 6 && rel > 1) for (let s = 0; s < 16; s += 2) put(T(bar, s), s % 4 ? 3 : 2);
       else if (rel === 6) [0, 4, 8, 12].forEach((s, i) => chord(T(bar, s), [[1,4],[2,3],[0,5],[2,3]][i]));
@@ -2012,15 +2021,20 @@ function drawGame(dt){
 
   // roads: one normally; Crossroads songs lean 2-3 roads in from different directions onto the same bar
   const multi = G.roads > 1;
-  const skews = !multi ? [0] : G.roads === 2 ? [-0.5, 0.5] : [-0.62, 0, 0.62];
-  const roadCols = [song.color, song.color2, '#ffffff'];
+  let skews = [0];
+  if (multi){
+    const kMax = (W * 0.42) / (L.judgeY - top.y);
+    const spread = Math.min(G.roads === 2 ? 0.5 : G.roads === 3 ? 0.62 : 0.95, kMax);
+    skews = Array.from({ length: G.roads }, (_, r) => -spread + 2 * spread * r / (G.roads - 1));
+  }
+  const roadCols = G.roads >= 5 ? ['#ff2d2d', '#ffd166', '#ffffff', '#7dffb3', '#4dd9ff'] : [song.color, song.color2, '#ffffff'];
   const yBot = multi ? L.judgeY : H, sB = multi ? 1 : sBot;
   const skewIn = k => { if (k) cx.transform(1, 0, -k, 1, k * L.judgeY, 0); };
   const beat = G.gen.beat, bo = G.gen.beatOffset || 0;
 
   skews.forEach((k, r) => {
     cx.save(); skewIn(k);
-    const edgeCol = multi ? roadCols[r % 3] : song.color;
+    const edgeCol = multi ? roadCols[r % roadCols.length] : song.color;
     cx.beginPath();
     cx.moveTo(xAt(0, top.s), top.y); cx.lineTo(xAt(LANES, top.s), top.y);
     cx.lineTo(xAt(LANES, sB), yBot); cx.lineTo(xAt(0, sB), yBot); cx.closePath();
@@ -2341,8 +2355,8 @@ function renderSelect(){
   document.documentElement.style.setProperty('--c', s.color);
   document.documentElement.style.setProperty('--c2', s.color2);
   $('songList').innerHTML = SONGS.map((x, i) =>
-    `<button class="song ${i === sel.song ? 'on' : ''} ${x.hype ? 'boss hype' : x.boss ? 'boss' : x.cross ? 'cross' : x.custom ? 'mine' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
-      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${x.hype ? '⚡ 3 MIN MARATHON · ' : x.boss ? '★ FINAL BOSS · ' : x.cross ? '⇶ CROSSROADS · ' + x.roads + ' roads · ' : x.custom ? '🎵 YOUR MUSIC · ~' : ''}${x.bpm} BPM</small></span></button>`).join('');
+    `<button class="song ${i === sel.song ? 'on' : ''} ${x.omega ? 'boss hype omega' : x.hype ? 'boss hype' : x.boss ? 'boss' : x.cross ? 'cross' : x.custom ? 'mine' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
+      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${x.omega ? 'Ω ALL ROADS · 5 roads · 3 MIN · ' : x.hype ? '⚡ 3 MIN MARATHON · ' : x.boss ? '★ FINAL BOSS · ' : x.cross ? '⇶ CROSSROADS · ' + x.roads + ' roads · ' : x.custom ? '🎵 YOUR MUSIC · ~' : ''}${x.bpm} BPM</small></span></button>`).join('');
   $('songList').innerHTML += `<button class="song addmusic" data-act="addmusic">🎵 Add your own music <kbd style="margin-left:6px">M</kbd></button>`;
   { const on = document.querySelector('#songList .song.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' }); }
   $('dTitle').textContent = s.title;
