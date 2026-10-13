@@ -85,6 +85,9 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .lessonlist{max-height:68vh;overflow-y:auto;padding:2px 6px 2px 2px}
 .ldesc{margin-top:14px;line-height:1.75;font-size:15px;opacity:.92}
 .play:disabled{opacity:.35;filter:grayscale(1);cursor:not-allowed}
+.song.boss{border-color:rgba(255,31,90,.6);background:linear-gradient(90deg,rgba(255,31,90,.18),rgba(255,255,255,.04));animation:bossPulse 1.6s ease-in-out infinite}
+.song.boss .st b{color:#ff4f7d;letter-spacing:.06em}
+@keyframes bossPulse{50%{box-shadow:0 0 26px -4px #ff1f5a}}
 #pauseBtn{position:fixed;top:12px;right:12px;z-index:4;width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);font-weight:900;display:none;font-family:'Outfit'}
 
 @media (max-width:720px){
@@ -223,6 +226,7 @@ const SONGS = [
   { id:'horizon', title:'Event Horizon', artist:'Prism Stage Original', bpm:240, root:58, mode:'minor', prog:[5,4,0,6], seed:191, color:'#ffffff', color2:'#ff2d2d', levels:[6,13,22,29,34,39,'∞'] },
   { id:'singularity', title:'Singularity', artist:'Prism Stage Original', bpm:260, root:57, mode:'minor', prog:[0,6,5,4], seed:277, color:'#b0b8ff', color2:'#ff0040', levels:[6,14,23,30,36,42,'∞'] },
   { id:'absolutezero', title:'Absolute Zero', artist:'Prism Stage Original', bpm:280, root:55, mode:'minor', prog:[5,3,4,0], seed:281, color:'#e0f7ff', color2:'#3b82ff', levels:[7,15,24,31,38,45,'∞'] },
+  { id:'prismbreaker', title:'PRISM BREAKER', artist:'Prism Stage Original', bpm:200, root:58, mode:'minor', prog:[0,5,6,4], seed:999, color:'#ff1f5a', color2:'#ffffff', levels:[5,12,20,28,33,'50','∞'], boss:true },
 ];
 const BEGINNER_WIN = { perfect:0.07, great:0.13, good:0.19, bad:0.25 };
 const LEADIN = 2.2;
@@ -390,7 +394,7 @@ function generateSong(song){
   }
   audio.sort((a,b) => a.t - b.t);
   const secs = plan.map(b => b.sec === 'break' ? 'verse' : b.sec);   // charts treat the breakdown like a verse
-  return { song, step, beat:4*step, audio, cands, seed:song.seed, bars:NB, secs, duration:NB*16*step + 2, charts:[] };
+  return { song, step, beat:4*step, audio, cands, seed:song.seed, bars:NB, secs, plan, duration:NB*16*step + 2, charts:[] };
 }
 
 // Beginner: one note every half bar, only on the middle two lanes (F / J), taps only.
@@ -451,6 +455,144 @@ function buildMasterChart(G){
     }
   }
   notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
+  return notes;
+}
+
+/* PRISM BREAKER — MASTER 50. Hand-designed patterns per section, plus gimmick events:
+   speed changes, hidden/sudden notes, stutter scrolling, screen shake, flashes and warning banners. */
+function buildBossChart(G){
+  const step = G.step, beat = G.beat, plan = G.plan, notes = [], events = [], R = rng(4242);
+  const T = (bar, s) => (bar * 16 + s) * step;
+  const occ = (t, l) => {
+    for (let k = notes.length - 1; k >= 0 && k >= notes.length - 80; k--){
+      const n = notes[k];
+      const lo = Math.min(n.lane, n.lane2 ?? n.lane), hi = Math.max(n.lane, n.lane2 ?? n.lane) + n.w;
+      if (l >= lo && l < hi && (Math.abs(n.t - t) < step * 0.45 || (n.type === 'hold' && t >= n.t - step * 0.45 && t <= n.end + step * 0.45))) return true;
+    }
+    return false;
+  };
+  const put = (t, lane, o = {}) => {
+    const w = o.w || 1, to = o.to ?? lane;
+    for (let i = Math.min(lane, to); i <= Math.max(lane, to) + w - 1; i++) if (i < 0 || i >= LANES || occ(t, i)) return null;
+    const n = { t, lane, w, type: o.type || 'tap', end: o.end || 0 };
+    if (n.type === 'hold') n.lane2 = to;
+    if (o.crit) n.crit = true;
+    notes.push(n); return n;
+  };
+  const chord = (t, lanes, o) => lanes.forEach(l => put(t, l, o));
+  const ev = e => events.push(e);
+  const banner = (t, text, color) => ev({ kind:'text', t0:t, t1:t + 1.4, text, color: color || '#ff1f5a' });
+
+  for (let bar = 0; bar < plan.length; bar++){
+    const { sec, rel, len, round } = plan[bar], last = bar === plan.length - 1;
+    const t0 = T(bar, 0), t1 = T(bar + 1, 0);
+
+    if (sec === 'intro'){
+      if (rel === 0) banner(t0, 'WARNING', '#ff1f5a');
+      if (rel < 2) [0,4,8,12].forEach((s, i) => put(T(bar, s), i % 2 ? 3 : 0, { w:3, type:'flick', crit: s === 0 }));
+      else if (rel === 2) for (let s = 0; s < 16; s += 2) put(T(bar, s), s % 4 ? 3 : 2);
+      else { for (let s = 0; s < 12; s++) put(T(bar, s), s % 2 ? 4 : 1); [0,1,2,3].forEach((l, i) => put(T(bar, 12 + i), l)); }
+    }
+
+    else if (sec === 'verse'){
+      if (round === 0){                       // 3-against-4 polyrhythm
+        if (rel === 0) banner(t0, 'POLYRHYTHM', '#7ef0ff');
+        for (let s = 0; s < 16; s += 3) put(T(bar, s), [0,1,2][(s / 3) % 3]);
+        for (let s = 0; s < 16; s += 2) put(T(bar, s), [5,4,3,4][(s / 2) % 4]);
+      } else if (round === 1){                // anchor: right hand slides, left hand 16ths
+        if (rel === 0) banner(t0, 'ANCHOR', '#7dffb3');
+        if (rel % 2 === 0) put(t0, rel % 4 === 0 ? 3 : 5, { type:'hold', end:T(bar + 1, 12), to: rel % 4 === 0 ? 5 : 3 });
+        const pat = [0,2,1,2];
+        for (let s = 0; s < 16; s++) put(T(bar, s), pat[s % 4]);
+      } else {                                // twin slides + stutter scroll
+        if (rel === 0) banner(t0, 'STUTTER', '#ffd23f');
+        for (const s of [0, 8]){
+          put(T(bar, s), 0, { type:'hold', end:T(bar, s + 6), to:2 });
+          put(T(bar, s), 5, { type:'hold', end:T(bar, s + 6), to:3 });
+          chord(T(bar, s + 7), [1, 4]);
+        }
+        for (let b = 0; b < 4; b++) ev({ kind:'speed', t0:T(bar, b * 4), t1:T(bar, b * 4 + 4), speed: b % 2 ? 1.6 : 0.55 });
+      }
+    }
+
+    else if (sec === 'break'){
+      const firstHalf = rel < len / 2;
+      if (rel === 0){ banner(t0, 'SPEED DOWN · HIDDEN', '#8ea2ff'); }
+      if (rel === len / 2){ banner(t0, 'SPEED UP · SUDDEN', '#ff7a3d'); }
+      if (firstHalf){
+        for (const s of [0,4,8,12]) put(T(bar, s), [1,4,2,3][(s / 4 + rel) % 4]);
+        ev({ kind:'speed', t0, t1, speed:0.45 }); ev({ kind:'hidden', t0, t1 });
+      } else {
+        for (let s = 0; s < 16; s += 2) put(T(bar, s), [0,5,1,4,2,3][(s / 2 + rel * 8) % 6]);
+        if (rel === len - 1) chord(T(bar, 15), [0, 5]);
+        ev({ kind:'speed', t0, t1, speed:2.2 }); ev({ kind:'sudden', t0, t1 });
+      }
+    }
+
+    else if (sec === 'build'){
+      ev({ kind:'shake', t0, t1, a0: rel / len * 7, a1: (rel + 1) / len * 7 });
+      if (rel < 2){
+        const st = [0,1,2,3,4,5,4,3,2,1];
+        for (let s = 0; s < 16; s++){ const l = st[(rel * 16 + s) % 10]; put(T(bar, s), l); if (s % 4 === 0) put(T(bar, s), LANES - 1 - l); }
+      } else if (rel === 2){
+        const pr = [[0,5],[1,4],[2,3],[1,4]];
+        for (let s = 0; s < 16; s += 2) chord(T(bar, s), pr[(s / 2) % 4]);
+      } else {                                // sextuplet glissando across all 6 keys, then the slam
+        banner(t0, 'GLISSANDO', '#c77dff');
+        for (let b = 0; b < 2; b++) for (let k = 0; k < 6; k++) put(T(bar, b * 4) + k * beat / 6, k);
+        for (let s = 8; s < 12; s++) put(T(bar, s), s % 2 ? 3 : 2);
+        chord(T(bar, 12), [0,1,4,5], { crit:true });
+      }
+    }
+
+    else if (sec === 'chorus'){
+      const ending = rel === len - 1;
+      if (rel === 0){ ev({ kind:'flash', t0 }); if (round === 2) banner(t0, 'PRISM BREAK', '#ffffff'); }
+      if (round === 2) ev({ kind:'speed', t0, t1, speed:1.25 });
+      if (round === 0){                       // chord storm
+        const pr = [[0,3],[2,5],[1,4],[0,5],[2,3],[1,4]];
+        for (let s = 0; s < 16; s += 2){
+          if (s === 0 && rel % 4 === 0){ put(t0, 1, { w:4, crit:true }); continue; }
+          chord(T(bar, s), pr[(rel * 8 + s / 2) % 6]);
+        }
+        if (!ending) put(T(bar, 15), rel % 2 ? 4 : 0, { w:2, type:'flick' });
+      } else if (round === 1){                // stream with triple chords on every beat
+        for (let s = 0; s < 16; s++){
+          if (s % 4 === 0){ const a = Math.floor(R() * 3); chord(T(bar, s), [a, a + 3, (a + 1) % 3 === a ? 2 : (a + 1) % 3]); }
+          else put(T(bar, s), s % 2 ? 3 + Math.floor(R() * 3) : Math.floor(R() * 3));
+        }
+      } else {                                // final chorus
+        if (rel >= len - 2){                  // jumpstream
+          const pr = [[0,5],[1,4],[2,3],[1,4]];
+          for (let s = 0; s < (ending ? 12 : 16); s++) chord(T(bar, s), pr[s % 4]);
+        } else {
+          for (let s = 0; s < 16; s++){
+            const l = [0,3,1,4,2,5,1,4][s % 8];
+            put(T(bar, s), l);
+            if (s % 4 === 0) chord(T(bar, s), [(l + 2) % 6, (l + 4) % 6]);
+          }
+        }
+      }
+      if (ending){
+        put(T(bar, 12), 0, { w:3, type:'flick', crit:true });
+        put(T(bar, 12), 3, { w:3, type:'flick', crit:true });
+      }
+    }
+
+    else if (sec === 'outro'){
+      if (last){
+        put(t0, 0, { w:6, type:'flick', crit:true });
+        ev({ kind:'flash', t0 }); banner(t0, 'PRISM BROKEN', '#ffffff');
+      } else if (rel === 0){
+        put(t0, 0, { type:'hold', end:T(bar + 2, 8), to:2 });
+        put(t0, 5, { type:'hold', end:T(bar + 2, 8), to:3 });
+      } else if (rel === 2){
+        chord(T(bar, 12), [1, 4]); chord(T(bar, 14), [2, 3]);
+      }
+    }
+  }
+  notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
+  notes.events = events;
   return notes;
 }
 
@@ -545,7 +687,10 @@ function getGen(i, d){
   if (d === INSANE){ const k = i + 'x' + INSANE_MULT; return genCache[k] || (genCache[k] = generateSong({ ...SONGS[i], bpm: SONGS[i].bpm * INSANE_MULT })); }
   return genCache[i] || (genCache[i] = generateSong(SONGS[i]));
 }
-function getChart(i, d){ const g = getGen(i, d); return g.charts[d] || (g.charts[d] = d === INSANE ? buildMasterChart(g) : buildChart(g, d)); }
+function getChart(i, d){
+  const g = getGen(i, d);
+  return g.charts[d] || (g.charts[d] = SONGS[i].boss && d === 5 ? buildBossChart(g) : d === INSANE ? buildMasterChart(g) : buildChart(g, d));
+}
 
 /* ================= AUDIO ================= */
 let AC = null, master = null, sfxGain = null, noiseBuf = null, OUT = null;
@@ -848,6 +993,7 @@ function startGame(lessonIdx){
     label = DIFFS[diff].name; labelColor = DIFFS[diff].color;
   }
   const notes = src.map((n, i) => ({ ...n, state: 0, id: i }));
+  const events = src.events || [];
   const total = notes.reduce((a, n) => a + (n.type === 'hold' ? 2 : 1), 0);
   const bus = AC.createGain(); bus.connect(master); OUT = bus;
   game = {
@@ -858,6 +1004,7 @@ function startGame(lessonIdx){
     fx: [], parts: [], lastJudge: null, laneFlash: new Array(LANES).fill(0),
     paused: false, ended: false, failed: false, auto: settings.auto,
     beatPulse: 0, comboPulse: 0, touch: false,
+    events, speedSegs: events.filter(e => e.kind === 'speed'),
   };
   down.clear(); ptrs.clear();
   showScreen(null);
@@ -991,6 +1138,23 @@ function holdHeld(n, now){
   return false;
 }
 
+// Scroll position: time warped by speed-change events, so notes can slow down / speed up mid-song
+function scrollPos(G, t){
+  let p = t;
+  for (const e of G.speedSegs){
+    const a = e.t0, b = Math.min(e.t1, t);
+    if (b > a) p += (e.speed - 1) * (b - a);
+  }
+  return p;
+}
+function activeEvent(G, kind, now){ return G.events.find(e => e.kind === kind && now >= e.t0 && now < e.t1); }
+function noteAlpha(G, d, now){
+  if (!G.events.length) return 1;
+  if (activeEvent(G, 'hidden', now)) return clamp((d - 0.22) / 0.15, 0, 1);   // vanish before the line
+  if (activeEvent(G, 'sudden', now)) return clamp((0.55 - d) / 0.12, 0, 1);   // appear late
+  return 1;
+}
+
 /* ================= EFFECTS ================= */
 function noteColor(n){ return n.crit ? NOTE_COL.crit : NOTE_COL[n.type]; }
 function spawnHit(n, j, tail){
@@ -1086,13 +1250,14 @@ function drawFlickArrow(xm, baseY, s, col, pending, w){
   }
   cx.globalAlpha = 1;
 }
-function drawHoldBand(n, dA, dB, active, now, vis){
+function drawHoldBand(n, tA, tB, active, D){
+  const dA = clamp(D(tA), -0.15, 1.05), dB = clamp(D(tB), -0.15, 1.05);
   if (dB <= dA) return;
   const a = proj(dA), b = proj(dB);
   const slide = n.lane2 != null && n.lane2 !== n.lane;
-  const SEG = slide ? 20 : 1, left = [], right = [];
+  const SEG = slide || game.speedSegs.length ? 20 : 1, left = [], right = [];
   for (let i = 0; i <= SEG; i++){
-    const d = dA + (dB - dA) * i / SEG, p = proj(d), pos = holdPos(n, now + d * vis);
+    const tt = tA + (tB - tA) * i / SEG, d = clamp(D(tt), -0.15, 1.05), p = proj(d), pos = holdPos(n, tt);
     left.push([xAt(pos + 0.16, p.s), p.y]); right.push([xAt(pos + n.w - 0.16, p.s), p.y]);
   }
   cx.beginPath();
@@ -1111,7 +1276,7 @@ function drawHoldBand(n, dA, dB, active, now, vis){
   if (game){
     const beat = game.gen.beat;
     for (let tb = Math.ceil((n.t + 0.02) / beat) * beat; tb < n.end - 0.02; tb += beat){
-      const d = (tb - now) / vis;
+      const d = D(tb);
       if (d < dA || d > dB) continue;
       const pp = proj(d), pos = holdPos(n, tb);
       const x = xAt(pos + n.w / 2, pp.s), r = Math.max(2, 9 * pp.s * L.u);
@@ -1125,8 +1290,8 @@ function drawHoldBand(n, dA, dB, active, now, vis){
     cx.strokeStyle = `rgba(210,255,230,${active ? 0.95 : 0.7})`; cx.lineWidth = 3 * L.u + 1; cx.stroke();
   }
   // tail cap
-  if (dB <= 1.05){
-    const tl = holdPos(n, now + dB * vis);
+  if (D(tB) <= 1.05){
+    const tl = holdPos(n, tB);
     const s = b.s, x0 = xAt(tl + 0.16, s), x1 = xAt(tl + n.w - 0.16, s), h = Math.max(3, 14 * s * L.u);
     cx.fillStyle = NOTE_COL.hold[1];
     notePath(x0, x1, b.y, h); cx.fill();
@@ -1137,6 +1302,13 @@ function drawHoldBand(n, dA, dB, active, now, vis){
 function drawGame(dt){
   const G = game, now = songNow(), vis = visTime(), song = G.song, u = L.u;
   const top = proj(1), sBot = (H - L.vanishY) / (L.judgeY - L.vanishY);
+  const nowPos = scrollPos(G, now), D = t => (scrollPos(G, t) - nowPos) / vis;
+  const shake = activeEvent(G, 'shake', now);
+  cx.save();
+  if (shake && !G.paused){
+    const a = shake.a0 + (shake.a1 - shake.a0) * (now - shake.t0) / (shake.t1 - shake.t0);
+    cx.translate((Math.random() - .5) * a * 2, (Math.random() - .5) * a * 2);
+  }
 
   // highway
   cx.beginPath();
@@ -1176,8 +1348,8 @@ function drawGame(dt){
 
   // beat lines
   const beat = G.gen.beat;
-  for (let b = Math.max(0, Math.floor(now / beat)); b * beat < now + vis; b++){
-    const d = (b * beat - now) / vis;
+  for (let b = Math.max(0, Math.floor(now / beat)); D(b * beat) < 1.05; b++){
+    const d = D(b * beat);
     if (d < 0) continue;
     const p = proj(d);
     cx.beginPath(); cx.moveTo(xAt(0, p.s), p.y); cx.lineTo(xAt(LANES, p.s), p.y);
@@ -1213,20 +1385,23 @@ function drawGame(dt){
   const N = G.notes;
   for (let i = G.first; i < N.length; i++){
     const n = N[i];
-    if (n.t > now + vis * 1.05) break;
+    if (D(n.t) > 1.05) break;
     if (n.state === 2) continue;
     vis_.push(n);
   }
   for (const n of vis_) if (n.type === 'hold'){
-    const dA = n.state === 1 ? 0 : (n.t - now) / vis;
-    drawHoldBand(n, Math.max(-0.15, dA), Math.min(1.05, (n.end - now) / vis), n.state === 1, now, vis);
+    const tA = n.state === 1 ? now : n.t;
+    if (D(tA) > 1.05) continue;
+    cx.globalAlpha = noteAlpha(G, Math.max(0, D(tA)), now);
+    drawHoldBand(n, tA, n.end, n.state === 1, D);
+    cx.globalAlpha = 1;
   }
   for (let i = vis_.length - 1; i >= 0; i--){
     const n = vis_[i];
-    let d = n.state === 1 || n.state === 3 ? 0 : (n.t - now) / vis;
+    let d = n.state === 1 || n.state === 3 ? 0 : D(n.t);
     if (d < -0.18 || d > 1.05) continue;
     if (n.state === 1) drawNote(n, 0, false, holdPos(n, now));
-    else drawNote(n, d, n.state === 3);
+    else { cx.globalAlpha = noteAlpha(G, d, now); drawNote(n, d, n.state === 3); cx.globalAlpha = 1; }
   }
 
   // hit fx
@@ -1285,6 +1460,26 @@ function drawGame(dt){
   }
   cx.restore();
   cx.globalAlpha = 1;
+
+  cx.restore();   // end of shake
+
+  // boss gimmick overlays: flashes and warning banners
+  for (const e of G.events){
+    if (e.kind === 'flash' && now >= e.t0 && now < e.t0 + 0.45){
+      cx.fillStyle = `rgba(255,255,255,${0.55 * (1 - (now - e.t0) / 0.45)})`; cx.fillRect(0, 0, W, H);
+    }
+    if (e.kind === 'text' && now >= e.t0 && now < e.t1){
+      const k = (now - e.t0) / (e.t1 - e.t0), a = k < 0.1 ? k / 0.1 : k > 0.75 ? (1 - k) / 0.25 : 1;
+      const y = H * 0.3, bh = 54 * u + 18;
+      cx.save(); cx.globalAlpha = a;
+      cx.fillStyle = 'rgba(8,8,20,.72)'; cx.fillRect(0, y - bh / 2, W, bh);
+      cx.fillStyle = e.color; cx.fillRect(0, y - bh / 2, W, 3); cx.fillRect(0, y + bh / 2 - 3, W, 3);
+      cx.font = `italic 900 ${Math.round(30 * u + 12)}px Outfit, sans-serif`; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+      cx.shadowColor = e.color; cx.shadowBlur = 20; cx.fillStyle = '#fff';
+      cx.fillText(e.text, L.cx + (1 - a) * 40, y);
+      cx.restore();
+    }
+  }
 
   drawHud(now, u, top);
 }
@@ -1398,8 +1593,8 @@ function renderSelect(){
   document.documentElement.style.setProperty('--c', s.color);
   document.documentElement.style.setProperty('--c2', s.color2);
   $('songList').innerHTML = SONGS.map((x, i) =>
-    `<button class="song ${i === sel.song ? 'on' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
-      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${x.bpm} BPM</small></span></button>`).join('');
+    `<button class="song ${i === sel.song ? 'on' : ''} ${x.boss ? 'boss' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
+      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${x.boss ? '★ FINAL BOSS · ' : ''}${x.bpm} BPM</small></span></button>`).join('');
   { const on = document.querySelector('#songList .song.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' }); }
   $('dTitle').textContent = s.title;
   $('dArtist').textContent = `${s.artist} · ${s.bpm} BPM`;
