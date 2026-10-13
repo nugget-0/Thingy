@@ -225,7 +225,6 @@ const SONGS = [
   { id:'absolutezero', title:'Absolute Zero', artist:'Prism Stage Original', bpm:280, root:55, mode:'minor', prog:[5,3,4,0], seed:281, color:'#e0f7ff', color2:'#3b82ff', levels:[7,15,24,31,38,45,'∞'] },
 ];
 const BEGINNER_WIN = { perfect:0.07, great:0.13, good:0.19, bad:0.25 };
-const BARS = 32;
 const LEADIN = 2.2;
 // [light, mid, dark]
 const NOTE_COL = {
@@ -259,13 +258,6 @@ function hexA(hex, a){
 
 /* ================= SONG + CHART GENERATION ================= */
 const SCALES = { minor:[0,2,3,5,7,8,10], major:[0,2,4,5,7,9,11] };
-function sectionOf(bar){
-  if (bar < 4) return 'intro';
-  if (bar < 12) return 'verse';
-  if (bar < 16) return 'build';
-  if (bar < 28) return 'chorus';
-  return 'outro';
-}
 
 function makePhrase(R, dense, lo, hi){
   const opts = dense ? [1,2,2,2,1,3,2,4,2] : [2,4,2,4,6,3,2,8];
@@ -283,17 +275,32 @@ function makePhrase(R, dense, lo, hi){
   return notes;
 }
 
+// Song structure. Faster songs get extra verse/build/chorus rounds so every song lasts a while.
+function songPlan(bpm){
+  const p = [['intro',4],['verse',8],['build',4],['chorus',12],['break',8],['verse',8],['build',4],['chorus',12]];
+  if (bpm >= 170) p.push(['verse',8],['build',4],['chorus',12]);
+  if (bpm >= 230) p.push(['break',4],['build',4],['chorus',12]);
+  p.push(['outro',4]);
+  const bars = [], round = {};
+  for (const [sec, len] of p){
+    const r = round[sec] || 0;
+    for (let i = 0; i < len; i++) bars.push({ sec, rel:i, len, round:r });
+    round[sec] = r + 1;
+  }
+  return bars;
+}
+
 function generateSong(song){
   const R = rng(song.seed);
   const sc = SCALES[song.mode];
   const deg = i => song.root + sc[((i % 7) + 7) % 7] + 12 * Math.floor(i / 7);
   const step = 60 / song.bpm / 4;
   const audio = [], cands = [];
-  const phr = {
-    vA: makePhrase(R, false, 7, 12), vB: makePhrase(R, false, 7, 12),
-    bP: makePhrase(R, true, 8, 13),
-    cA: makePhrase(R, true, 9, 15), cB: makePhrase(R, true, 9, 15),
-  };
+  const plan = songPlan(song.bpm), NB = plan.length;
+  // the chorus hook stays the same every time; verses, builds and breaks get new melodies each round
+  const hook = makePhrase(R, true, 9, 15);
+  const cache = {};
+  const phrase = (key, r, mk) => (cache[key + r] ||= mk());
   const snap = (d, c) => {
     let best = d, bd = 99;
     for (let o = -14; o <= 21; o += 7) for (const k of [0,2,4]){
@@ -303,40 +310,43 @@ function generateSong(song){
     return best;
   };
 
-  for (let bar = 0; bar < BARS; bar++){
-    const sec = sectionOf(bar), c = song.prog[bar % 4], gs0 = bar * 16;
+  for (let bar = 0; bar < NB; bar++){
+    const { sec, rel, len, round } = plan[bar], last = bar === NB - 1;
+    const c = song.prog[bar % 4], gs0 = bar * 16;
     const add = (s, type, o) => audio.push(Object.assign({ t:(gs0 + s) * step, type }, o || {}));
     const cand = (s, kind, o) => cands.push(Object.assign({ gs:gs0 + s, kind }, o || {}));
 
-    if (bar < 31) add(0, 'pad', { notes:[deg(c), deg(c+2), deg(c+4)], dur:16*step*0.98, vol: sec === 'chorus' ? 1 : 0.75 });
+    if (!last) add(0, 'pad', { notes:[deg(c), deg(c+2), deg(c+4)], dur:16*step*0.98, vol: sec === 'chorus' ? 1 : sec === 'break' ? 0.9 : 0.75 });
 
     let kicks = [], snares = [], hats = [], ohats = [];
     if (sec === 'intro'){
       kicks = [0, 8];
-      if (bar >= 2) hats = [0,2,4,6,8,10,12,14];
-      if (bar === 3) snares = [12, 14];
+      if (rel >= 2) hats = [0,2,4,6,8,10,12,14];
+      if (rel === len - 1) snares = [12, 14];
     } else if (sec === 'verse'){
       kicks = bar % 2 ? [0,6,8,11] : [0,6,8];
       snares = [4, 12];
       hats = [0,2,4,6,8,10,12,14];
+    } else if (sec === 'break'){
+      if (rel < len - 2){ kicks = [0]; hats = [4, 12]; }
+      else { kicks = [0, 8]; hats = [0,2,4,6,8,10,12,14]; if (rel === len - 1) snares = [12, 14]; }
     } else if (sec === 'build'){
-      const r = bar - 12;
       kicks = [0,4,8,12];
-      snares = r < 2 ? [4,12] : r === 2 ? [0,2,4,6,8,10,12,14] : [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
-      if (r < 2) hats = [2,6,10,14];
+      snares = rel < len - 2 ? [4,12] : rel === len - 2 ? [0,2,4,6,8,10,12,14] : [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
+      if (rel < len - 2) hats = [2,6,10,14];
     } else if (sec === 'chorus'){
       kicks = [0,4,8,12];
-      snares = bar === 27 ? [4,12,13,14,15] : [4,12];
+      snares = rel === len - 1 ? [4,12,13,14,15] : [4,12];
       ohats = [2,6,10,14];
       hats = [3,7,11,15];
-      if (bar === 16 || bar === 24) add(0, 'crash');
+      if (rel === 0 || rel === 8) add(0, 'crash');
     } else {
-      if (bar < 31){ kicks = [0, 8]; hats = [4, 12]; }
+      if (!last){ kicks = [0, 8]; hats = [4, 12]; }
       else { kicks = [0]; add(0, 'crash'); }
     }
     kicks.forEach(s => { add(s, 'kick'); cand(s, 'kick'); });
     snares.forEach(s => {
-      const vol = sec === 'build' ? 0.35 + 0.65 * ((bar - 12) * 16 + s) / 64 : 1;
+      const vol = sec === 'build' ? 0.35 + 0.65 * (rel * 16 + s) / (len * 16) : 1;
       add(s, 'snare', { vol }); cand(s, 'snare');
     });
     hats.forEach(s => add(s, 'hat'));
@@ -344,15 +354,18 @@ function generateSong(song){
 
     let bass = [];
     if (sec === 'verse') bass = [[0,3,0],[3,3,0],[6,2,0],[8,3,0],[11,3,0],[14,2,0]];
+    else if (sec === 'break') bass = [[0,7,0],[8,7,0]];
     else if (sec === 'build') bass = [0,2,4,6,8,10,12,14].map(s => [s,2,0]);
     else if (sec === 'chorus') bass = [0,2,4,6,8,10,12,14].map((s,i) => [s,2,i % 2 ? 12 : 0]);
-    else if (sec === 'outro') bass = bar < 31 ? [[0,12,0]] : [[0,8,0]];
+    else if (sec === 'outro') bass = last ? [[0,8,0]] : [[0,12,0]];
     bass.forEach(([s,l,o]) => add(s, 'bass', { midi:deg(c) - 24 + o, dur:l * step * 0.9 }));
 
-    let P = null, rel = 0;
-    if (sec === 'verse'){ rel = bar - 4; P = (Math.floor(rel/2) % 2) ? phr.vB : phr.vA; }
-    else if (sec === 'build'){ rel = bar - 12; P = phr.bP; }
-    else if (sec === 'chorus'){ rel = bar - 16; P = (Math.floor(rel/2) % 2) ? phr.cB : phr.cA; }
+    let P = null;
+    const pair = Math.floor(rel / 2) % 2;
+    if (sec === 'verse') P = phrase(pair ? 'vB' : 'vA', round, () => makePhrase(R, false, 7, 12));
+    else if (sec === 'break') P = phrase('br', round, () => makePhrase(R, false, 8, 13));
+    else if (sec === 'build') P = phrase('bP', round, () => makePhrase(R, true, 8, 13));
+    else if (sec === 'chorus') P = pair ? phrase('cB', round, () => makePhrase(R, true, 9, 15)) : hook;
     if (P){
       const half = (rel % 2) * 16;
       for (const n of P){
@@ -364,19 +377,20 @@ function generateSong(song){
         cand(s, 'mel', { midi, len:n.len });
       }
     }
-    if (sec === 'outro' && (bar === 28 || bar === 30)){
+    if (sec === 'outro' && !last && rel % 2 === 0){
       const midi = deg(snap(10, c));
       add(0, 'lead', { midi, dur:14 * step });
       cand(0, 'mel', { midi, len:14 });
     }
-    if (bar === 31){
+    if (last){
       const midi = deg(snap(14, c));
       add(0, 'lead', { midi, dur:12 * step, bright:true });
       cand(0, 'mel', { midi, len:2, final:true });
     }
   }
   audio.sort((a,b) => a.t - b.t);
-  return { song, step, beat:4*step, audio, cands, seed:song.seed, duration:BARS*16*step + 2, charts:[] };
+  const secs = plan.map(b => b.sec === 'break' ? 'verse' : b.sec);   // charts treat the breakdown like a verse
+  return { song, step, beat:4*step, audio, cands, seed:song.seed, bars:NB, secs, duration:NB*16*step + 2, charts:[] };
 }
 
 // Beginner: one note every half bar, only on the middle two lanes (F / J), taps only.
@@ -410,8 +424,8 @@ function buildMasterChart(G){
   });
   const has = new Set(notes.map(n => Math.round(n.t / step)));
   let stair = 0, dir = 1, trillA = 1, trillB = 4, mode = 0;
-  for (let gs = 16; gs < BARS * 16 - 16; gs++){
-    const sec = sectionOf(Math.floor(gs / 16)), sb = gs % 16;
+  for (let gs = 16; gs < G.bars * 16 - 16; gs++){
+    const sec = G.secs[Math.floor(gs / 16)], sb = gs % 16;
     if (sb === 0) mode = Math.floor(R() * 3);           // 0 = up/down stairs, 1 = trill, 2 = zigzag
     const p = sec === 'chorus' ? 0.7 : sec === 'build' ? 0.6 : sec === 'verse' ? (sb % 2 === 0 ? 0.45 : 0.2) : sec === 'intro' ? 0.25 : 0;
     if (has.has(gs) || R() >= p) continue;
@@ -428,7 +442,7 @@ function buildMasterChart(G){
     has.add(gs);
   }
   for (const n of notes.slice()){
-    const gs = Math.round(n.t / step), sec = sectionOf(Math.floor(gs / 16));
+    const gs = Math.round(n.t / step), sec = G.secs[Math.floor(gs / 16)];
     if ((sec !== 'chorus' && sec !== 'build') || gs % 4 !== 0 || n.type === 'hold') continue;
     const extra = gs % 16 === 0 ? 2 : 1;
     for (let k = 0; k < extra; k++){
@@ -470,7 +484,7 @@ function buildChart(G, level){
   };
 
   for (const gs of steps){
-    const list = by.get(gs), t = gs * step, sb = gs % 16, sec = sectionOf(Math.floor(gs / 16));
+    const list = by.get(gs), t = gs * step, sb = gs % 16, sec = G.secs[Math.floor(gs / 16)];
     const mel = list.find(c => c.kind === 'mel'), kick = list.find(c => c.kind === 'kick'), snare = list.find(c => c.kind === 'snare');
     const isFinal = mel && mel.final;
     if (sb % align !== 0 && !isFinal) continue;
