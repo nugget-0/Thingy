@@ -44,9 +44,9 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .detail{padding:22px;border-radius:24px;background:rgba(12,14,34,.74);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .dTitle{font-size:clamp(24px,4vw,34px);font-weight:900;line-height:1.15}
 .dArtist{opacity:.65;margin-top:4px;font-size:14px}
-.diffs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:18px}
+.diffs{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:18px}
 .diff{padding:10px 4px 8px;border-radius:14px;border:2px solid rgba(255,255,255,.13);background:rgba(255,255,255,.04);display:flex;flex-direction:column;align-items:center;transition:.15s}
-.diff small{font-size:9.5px;font-weight:900;letter-spacing:.08em;color:var(--dc)}
+.diff small{font-size:8.5px;font-weight:900;letter-spacing:.08em;color:var(--dc)}
 .diff b{font-size:26px;font-family:'Outfit';line-height:1.1}
 .diff.on{border-color:var(--dc);background:rgba(255,255,255,.13);box-shadow:0 0 20px -5px var(--dc)}
 .meta{display:flex;justify-content:space-between;gap:10px;margin-top:12px;opacity:.8;font-size:13.5px}
@@ -87,6 +87,8 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
   #select{justify-content:flex-start}
   .songlist{flex-direction:row;overflow-x:auto;padding-bottom:4px}
   .song{flex:none;min-width:210px}
+  .diffs{grid-template-columns:repeat(3,1fr)}
+  .diff small{font-size:10px}
 }
 </style>
 </head>
@@ -167,12 +169,15 @@ const DIFFS = [
   { name:'NORMAL', color:'#5cb8ff' },
   { name:'HARD',   color:'#ffc94d' },
   { name:'EXPERT', color:'#ff5577' },
+  { name:'MASTER', color:'#c77dff' },
 ];
 const SONGS = [
-  { id:'firststeps', title:'First Steps',         artist:'Prism Stage Original', bpm:100, root:60, mode:'major', prog:[0,3,4,0], seed:5,  color:'#7dffb3', color2:'#4dd9ff', levels:[1,3,8,14,20] },
-  { id:'neon',      title:'Neon Skyline',         artist:'Prism Stage Original', bpm:150, root:57, mode:'minor', prog:[0,5,2,6], seed:11, color:'#4dd9ff', color2:'#7a5cff', levels:[2,6,13,20,26] },
-  { id:'lantern',   title:'Paper Lantern Parade', artist:'Prism Stage Original', bpm:128, root:60, mode:'major', prog:[0,4,5,3], seed:23, color:'#ffb347', color2:'#ff6f91', levels:[2,5,11,18,24] },
-  { id:'afterglow', title:'Afterglow Circuit',    artist:'Prism Stage Original', bpm:172, root:62, mode:'minor', prog:[5,6,0,4], seed:37, color:'#ff5fa2', color2:'#ffd166', levels:[3,8,15,23,29] },
+  { id:'firststeps', title:'First Steps',         artist:'Prism Stage Original', bpm:100, root:60, mode:'major', prog:[0,3,4,0], seed:5,  color:'#7dffb3', color2:'#4dd9ff', levels:[1,3,8,14,20,24] },
+  { id:'neon',      title:'Neon Skyline',         artist:'Prism Stage Original', bpm:150, root:57, mode:'minor', prog:[0,5,2,6], seed:11, color:'#4dd9ff', color2:'#7a5cff', levels:[2,6,13,20,26,30] },
+  { id:'lantern',   title:'Paper Lantern Parade', artist:'Prism Stage Original', bpm:128, root:60, mode:'major', prog:[0,4,5,3], seed:23, color:'#ffb347', color2:'#ff6f91', levels:[2,5,11,18,24,28] },
+  { id:'afterglow', title:'Afterglow Circuit',    artist:'Prism Stage Original', bpm:172, root:62, mode:'minor', prog:[5,6,0,4], seed:37, color:'#ff5fa2', color2:'#ffd166', levels:[3,8,15,23,29,33] },
+  { id:'overclock',  title:'Overclock Requiem',    artist:'Prism Stage Original', bpm:196, root:59, mode:'minor', prog:[0,6,5,4], seed:61, color:'#ff3b3b', color2:'#7a00ff', levels:[4,10,18,26,31,35] },
+  { id:'hyperdrive', title:'Hyperdrive Heartbeat', artist:'Prism Stage Original', bpm:222, root:64, mode:'minor', prog:[5,3,0,4], seed:83, color:'#c77dff', color2:'#00e5ff', levels:[5,12,21,28,33,37] },
 ];
 const BEGINNER_WIN = { perfect:0.07, great:0.13, good:0.19, bad:0.25 };
 const BARS = 32;
@@ -348,8 +353,47 @@ function buildBeginnerChart(G){
   return notes;
 }
 
+// Master: Expert chart + 16th-note staircases, big chords and flicks inside the streams.
+function buildMasterChart(G){
+  const notes = buildChart(G, 4).map(n => ({ ...n }));
+  const step = G.step, R = rng(G.seed * 97 + 13);
+  const occ = (t, l) => notes.some(n => l >= n.lane && l < n.lane + n.w &&
+    (Math.abs(n.t - t) < step * 0.6 || (n.type === 'hold' && t >= n.t - step * 0.5 && t <= n.end + step * 0.5)));
+  const has = new Set(notes.map(n => Math.round(n.t / step)));
+  let stair = 0, dir = 1, trillA = 1, trillB = 4, mode = 0;
+  for (let gs = 16; gs < BARS * 16 - 16; gs++){
+    const sec = sectionOf(Math.floor(gs / 16)), sb = gs % 16;
+    if (sb === 0) mode = Math.floor(R() * 3);           // 0 = up/down stairs, 1 = trill, 2 = zigzag
+    const p = sec === 'chorus' ? 0.7 : sec === 'build' ? 0.6 : sec === 'verse' ? (sb % 2 === 0 ? 0.45 : 0.2) : sec === 'intro' ? 0.25 : 0;
+    if (has.has(gs) || R() >= p) continue;
+    const t = gs * step;
+    let l;
+    if (mode === 0){ stair += dir; if (stair >= LANES - 1 || stair <= 0) dir = -dir; l = clamp(stair, 0, LANES - 1); }
+    else if (mode === 1){ l = (gs % 2) ? trillA : trillB; }
+    else { l = (gs % 2) ? Math.floor(R() * 3) : 3 + Math.floor(R() * 3); }
+    let tries = 0;
+    while (occ(t, l) && tries < LANES){ l = (l + 1) % LANES; tries++; }
+    if (tries >= LANES) continue;
+    const type = sec === 'chorus' && sb % 4 === 2 && R() < 0.3 ? 'flick' : 'tap';
+    notes.push({ t, lane: l, w: 1, type, end: 0 });
+    has.add(gs);
+  }
+  for (const n of notes.slice()){
+    const gs = Math.round(n.t / step), sec = sectionOf(Math.floor(gs / 16));
+    if ((sec !== 'chorus' && sec !== 'build') || gs % 4 !== 0 || n.type === 'hold') continue;
+    const extra = gs % 16 === 0 ? 2 : 1;
+    for (let k = 0; k < extra; k++){
+      const l = Math.floor(R() * LANES);
+      if (!occ(n.t, l)) notes.push({ t: n.t, lane: l, w: 1, type: 'tap', end: 0 });
+    }
+  }
+  notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
+  return notes;
+}
+
 function buildChart(G, level){
   if (level === 0) return buildBeginnerChart(G);
+  if (level === 5) return buildMasterChart(G);
   level -= 1;
   const step = G.step;
   const minGap = [4,2,2,1][level], align = [4,2,1,1][level];
