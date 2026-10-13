@@ -124,6 +124,11 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .vnText{font-size:clamp(16px,2.4vw,20px);line-height:1.6;margin-top:4px;min-height:2em}
 .vnHint{position:absolute;right:18px;bottom:8px;font-size:12px;opacity:.55}
 .vnTitle{position:absolute;top:16px;left:50%;transform:translateX(-50%);font-weight:900;letter-spacing:.15em;font-size:13px;opacity:.75;white-space:nowrap}
+.noticeBox{text-align:center;cursor:pointer;width:min(560px,100%)}
+.noticeTitle{font-family:'Outfit';font-weight:900;font-size:clamp(28px,6vw,44px);line-height:1.1;margin-bottom:18px;background:linear-gradient(90deg,#ffd166,#ff5fa2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.noticeBox p{font-size:clamp(16px,2.6vw,20px);line-height:1.7;opacity:.92}
+.noticeSig{margin-top:10px;font-style:italic;font-weight:800;opacity:1!important;color:#7dffb3}
+#aiNote{position:fixed;left:10px;bottom:6px;z-index:6;max-width:min(62vw,520px);font-size:11px;line-height:1.35;opacity:.5;pointer-events:none}
 #pauseBtn{position:fixed;top:12px;right:12px;z-index:4;width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);font-weight:900;display:none;font-family:'Outfit'}
 
 @media (max-width:720px){
@@ -140,7 +145,19 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 <body>
 <canvas id="cv"></canvas>
 
-<div id="title" class="screen active" data-act="start">
+<div id="notice" class="screen active" data-act="noticeok">
+  <div class="panel noticeBox">
+    <div class="noticeTitle">⚠️ Do not judge the images</div>
+    <p>It's due to popular request of story mode</p>
+    <p>And the image prompts were fully AI generated</p>
+    <p>And so were the images</p>
+    <p>Thx for reading</p>
+    <p class="noticeSig">~owner</p>
+    <div class="pill" style="margin-top:22px">Press <kbd>Enter</kbd> or tap to continue</div>
+  </div>
+</div>
+
+<div id="title" class="screen" data-act="start">
   <div class="logo"><span class="l1">PRISM</span><span class="l2">STAGE</span></div>
   <div class="tag">colorful rhythm game · prototype</div>
   <div class="pill">Press <kbd>Enter</kbd> or tap to start</div>
@@ -235,6 +252,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 
 <button id="pauseBtn" data-act="pause">II</button>
 <div id="toast"></div>
+<div id="aiNote">🖼️ Character images (and their prompts) are fully AI-generated, added by popular request for story mode. Don't judge lol ~owner</div>
 
 <script>
 'use strict';
@@ -1226,7 +1244,7 @@ function backToMenu(){
 const CHARS = {
   prism:  { name:'Prism',          role:'Spirit of the Stage', img:'', color:'#ffe066' },
   aoi:    { name:'Aoi Kurose',     role:'Guitar & vocals', img:'https://i.postimg.cc/YCdp9htt/IMG-1590.jpg', color:'#4d9dff' },
-  mika:   { name:'Mika Tendo',     role:'Drums', img:'', color:'#ff9a4d' },
+  mika:   { name:'Mika Tendo',     role:'Drums', img:'https://i.postimg.cc/xd7NXs9m/IMG-1596.jpg', color:'#ff9a4d' },
   hana:   { name:'Hana Sakuraba',  role:'Lead singer', img:'https://i.postimg.cc/mDQJP57M/IMG-1591.jpg', color:'#ff7ab8' },
   yuzu:   { name:'Yuzu Mori',      role:'Dance & harmony', img:'https://i.postimg.cc/5ysPvdym/IMG-1592.jpg', color:'#ffd166' },
   kai:    { name:'Kai Ishida',     role:'Rapper', img:'https://i.postimg.cc/FRmGBsJk/IMG-1593.jpg', color:'#a66bff' },
@@ -1633,7 +1651,7 @@ IDB.all().then(recs => {
 }).catch(() => {});
 
 /* ================= GAME STATE ================= */
-let screen = 'title';
+let screen = 'notice';
 const sel = { song: 0, diff: 0 };
 let game = null;
 const down = new Set();
@@ -2395,6 +2413,7 @@ function act(a){
     case 'lesson-start': if (lsel < lessonsUnlocked()) startGame(lsel); break;
     case 'next': lsel = Math.min(LESSONS.length - 1, lastLesson + 1); startGame(lsel); break;
     case 'menu': backToMenu(); break;
+    case 'noticeok': showScreen('title'); sfx('blip'); break;
     case 'story': showStory(); break;
     case 'vnnext': vnNext(); break;
     case 'addmusic': $('fileIn').click(); break;
@@ -2439,7 +2458,8 @@ addEventListener('keydown', e => {
     return;
   }
   if (e.repeat && (k === 'enter' || k === ' ')) return;
-  if (screen === 'title'){ if (k === 'enter' || k === ' ') goSelect(); else if (k === 'l') showLessons(); else if (k === 's') showStory(); }
+  if (screen === 'notice'){ if (k === 'enter' || k === ' ' || k === 'escape') act('noticeok'); }
+  else if (screen === 'title'){ if (k === 'enter' || k === ' ') goSelect(); else if (k === 'l') showLessons(); else if (k === 's') showStory(); }
   else if (screen === 'story'){
     const u = UNITS[storySel.unit];
     switch (k){
