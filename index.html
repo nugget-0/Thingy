@@ -44,9 +44,9 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .detail{padding:22px;border-radius:24px;background:rgba(12,14,34,.74);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .dTitle{font-size:clamp(24px,4vw,34px);font-weight:900;line-height:1.15}
 .dArtist{opacity:.65;margin-top:4px;font-size:14px}
-.diffs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:18px}
+.diffs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:18px}
 .diff{padding:10px 4px 8px;border-radius:14px;border:2px solid rgba(255,255,255,.13);background:rgba(255,255,255,.04);display:flex;flex-direction:column;align-items:center;transition:.15s}
-.diff small{font-size:10.5px;font-weight:900;letter-spacing:.08em;color:var(--dc)}
+.diff small{font-size:9.5px;font-weight:900;letter-spacing:.08em;color:var(--dc)}
 .diff b{font-size:26px;font-family:'Outfit';line-height:1.1}
 .diff.on{border-color:var(--dc);background:rgba(255,255,255,.13);box-shadow:0 0 20px -5px var(--dc)}
 .meta{display:flex;justify-content:space-between;gap:10px;margin-top:12px;opacity:.8;font-size:13.5px}
@@ -162,16 +162,19 @@ const JUDGE_NAMES = ['PERFECT','GREAT','GOOD','BAD','MISS'];
 const JUDGE_COLORS = ['#ffe066','#ff7ad9','#5ee0ff','#a3acc2','#7d8291'];
 const JUDGE_SCORE = [1, 0.8, 0.5, 0.2, 0];
 const DIFFS = [
+  { name:'BEGINNER', color:'#b9f3ff' },
   { name:'EASY',   color:'#5fe08a' },
   { name:'NORMAL', color:'#5cb8ff' },
   { name:'HARD',   color:'#ffc94d' },
   { name:'EXPERT', color:'#ff5577' },
 ];
 const SONGS = [
-  { id:'neon',      title:'Neon Skyline',         artist:'Prism Stage Original', bpm:150, root:57, mode:'minor', prog:[0,5,2,6], seed:11, color:'#4dd9ff', color2:'#7a5cff', levels:[6,13,20,26] },
-  { id:'lantern',   title:'Paper Lantern Parade', artist:'Prism Stage Original', bpm:128, root:60, mode:'major', prog:[0,4,5,3], seed:23, color:'#ffb347', color2:'#ff6f91', levels:[5,11,18,24] },
-  { id:'afterglow', title:'Afterglow Circuit',    artist:'Prism Stage Original', bpm:172, root:62, mode:'minor', prog:[5,6,0,4], seed:37, color:'#ff5fa2', color2:'#ffd166', levels:[8,15,23,29] },
+  { id:'firststeps', title:'First Steps',         artist:'Prism Stage Original', bpm:100, root:60, mode:'major', prog:[0,3,4,0], seed:5,  color:'#7dffb3', color2:'#4dd9ff', levels:[1,3,8,14,20] },
+  { id:'neon',      title:'Neon Skyline',         artist:'Prism Stage Original', bpm:150, root:57, mode:'minor', prog:[0,5,2,6], seed:11, color:'#4dd9ff', color2:'#7a5cff', levels:[2,6,13,20,26] },
+  { id:'lantern',   title:'Paper Lantern Parade', artist:'Prism Stage Original', bpm:128, root:60, mode:'major', prog:[0,4,5,3], seed:23, color:'#ffb347', color2:'#ff6f91', levels:[2,5,11,18,24] },
+  { id:'afterglow', title:'Afterglow Circuit',    artist:'Prism Stage Original', bpm:172, root:62, mode:'minor', prog:[5,6,0,4], seed:37, color:'#ff5fa2', color2:'#ffd166', levels:[3,8,15,23,29] },
 ];
+const BEGINNER_WIN = { perfect:0.07, great:0.13, good:0.19, bad:0.25 };
 const BARS = 32;
 const LEADIN = 2.2;
 const NOTE_COL = {
@@ -324,7 +327,30 @@ function generateSong(song){
   return { song, step, beat:4*step, audio, cands, seed:song.seed, duration:BARS*16*step + 2, charts:[] };
 }
 
+// Beginner: one note every half bar, only on the middle two lanes (F / J), taps only.
+function buildBeginnerChart(G){
+  const step = G.step, notes = [];
+  const by = new Map();
+  for (const c of G.cands){ if (!by.has(c.gs)) by.set(c.gs, []); by.get(c.gs).push(c); }
+  const steps = [...by.keys()].filter(gs => gs % 8 === 0).sort((a,b) => a - b);
+  let lastGs = -99, lastLane = 3, lastMidi = null;
+  for (const gs of steps){
+    if (gs - lastGs < 8) continue;
+    const list = by.get(gs);
+    const mel = list.find(c => c.kind === 'mel');
+    let lane;
+    if (mel && lastMidi != null && mel.midi !== lastMidi) lane = mel.midi > lastMidi ? 3 : 2;
+    else lane = lastLane === 2 ? 3 : 2;
+    if (mel) lastMidi = mel.midi;
+    notes.push({ t: gs * step, lane, w: 1, type: 'tap', end: 0 });
+    lastGs = gs; lastLane = lane;
+  }
+  return notes;
+}
+
 function buildChart(G, level){
+  if (level === 0) return buildBeginnerChart(G);
+  level -= 1;
   const step = G.step;
   const minGap = [4,2,2,1][level], align = [4,2,1,1][level];
   const by = new Map();
@@ -509,7 +535,7 @@ const bgParts = Array.from({ length: 34 }, () => ({
 
 /* ================= GAME STATE ================= */
 let screen = 'title';
-const sel = { song: 0, diff: 1 };
+const sel = { song: 0, diff: 0 };
 let game = null;
 const down = new Set();
 const ptrs = new Map();
@@ -529,7 +555,7 @@ function startGame(){
   const bus = AC.createGain(); bus.connect(master); OUT = bus;
   game = {
     song: SONGS[sel.song], diff: sel.diff, gen: g, notes, total, bus,
-    t0: AC.currentTime + LEADIN, audioIdx: 0, first: 0,
+    t0: AC.currentTime + LEADIN, audioIdx: 0, first: 0, win: sel.diff === 0 ? BEGINNER_WIN : WIN,
     score: 0, combo: 0, maxCombo: 0, life: 1000, counts: [0,0,0,0,0],
     fx: [], parts: [], lastJudge: null, laneFlash: new Array(LANES).fill(0),
     paused: false, ended: false, failed: false, auto: settings.auto,
@@ -572,7 +598,8 @@ function scheduleAudio(){
 
 function judgeOf(dt){
   dt = Math.abs(dt);
-  return dt <= WIN.perfect ? 0 : dt <= WIN.great ? 1 : dt <= WIN.good ? 2 : 3;
+  const w = game.win;
+  return dt <= w.perfect ? 0 : dt <= w.great ? 1 : dt <= w.good ? 2 : 3;
 }
 function judge(n, j, tail){
   const G = game;
@@ -587,6 +614,7 @@ function judge(n, j, tail){
     spawnHit(n, j);
     sfx(n.type === 'flick' && !tail ? 'flick' : 'tap');
   }
+  if (G.diff === 0) G.life = Math.max(G.life, 1); // Beginner can't fail
   if (G.life <= 0 && !G.ended){ G.life = 0; G.failed = true; endGame(); }
 }
 
@@ -596,10 +624,10 @@ function pressLane(lane, src){
   let best = null;
   for (let i = G.first; i < N.length; i++){
     const n = N[i];
-    if (n.t - now > WIN.bad) break;
+    if (n.t - now > G.win.bad) break;
     if (n.state !== 0) continue;
     if (lane < n.lane || lane >= n.lane + n.w) continue;
-    if (now - n.t > WIN.bad) continue;
+    if (now - n.t > G.win.bad) continue;
     best = n; break;
   }
   if (!best) return;
@@ -621,7 +649,7 @@ function update(){
       if (G.auto && now >= n.t){
         judge(n, 0);
         if (n.type === 'hold'){ n.state = 1; n.src = 'auto'; } else n.state = 2;
-      } else if (now > n.t + WIN.bad){
+      } else if (now > n.t + G.win.bad){
         judge(n, 4);
         if (n.type === 'hold') judge(n, 4, true);
         n.state = 2;
@@ -926,7 +954,7 @@ function renderSelect(){
   $('diffs').innerHTML = DIFFS.map((d, i) =>
     `<button class="diff ${i === sel.diff ? 'on' : ''}" data-diff="${i}" style="--dc:${d.color}"><small>${d.name}</small><b>${s.levels[i]}</b></button>`).join('');
   const ch = getChart(sel.song, sel.diff);
-  const best = store.get(`best_${s.id}_${sel.diff}`, null);
+  const best = store.get(`best_${s.id}_${DIFFS[sel.diff].name}`, null);
   $('meta').innerHTML = `<span>${ch.length} notes</span><span>Best: ${best ? best.score.toLocaleString() + ' · ' + best.rank + (best.badge ? ' · ' + best.badge : '') : '—'}</span>`;
   $('oSpeed').textContent = settings.speed;
   $('oOffset').textContent = (settings.offset > 0 ? '+' : '') + settings.offset + ' ms';
@@ -945,7 +973,7 @@ function showResults(){
   $('rRank').textContent = rank;
   const b = $('rBadge'); b.textContent = badge; b.className = 'rBadge' + (ap ? ' ap' : fc ? ' fc' : G.failed ? ' fail' : '');
   $('rScore').textContent = sc.toLocaleString();
-  const key = `best_${G.song.id}_${G.diff}`, prev = store.get(key, null);
+  const key = `best_${G.song.id}_${DIFFS[G.diff].name}`, prev = store.get(key, null);
   const bestEl = $('rBest');
   if (!G.auto && !G.failed && (!prev || sc > prev.score)){
     store.set(key, { score: sc, rank, badge: ap ? 'AP' : fc ? 'FC' : '' });
@@ -1008,7 +1036,7 @@ addEventListener('keydown', e => {
       case 'arrowup': sel.song = (sel.song + SONGS.length - 1) % SONGS.length; renderSelect(); sfx('blip'); break;
       case 'arrowdown': sel.song = (sel.song + 1) % SONGS.length; renderSelect(); sfx('blip'); break;
       case 'arrowleft': sel.diff = Math.max(0, sel.diff - 1); renderSelect(); sfx('blip'); break;
-      case 'arrowright': sel.diff = Math.min(3, sel.diff + 1); renderSelect(); sfx('blip'); break;
+      case 'arrowright': sel.diff = Math.min(DIFFS.length - 1, sel.diff + 1); renderSelect(); sfx('blip'); break;
       case 'enter': case ' ': startGame(); break;
       case '-': case '_': act('spd-'); break;
       case '=': case '+': act('spd+'); break;
