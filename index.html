@@ -88,6 +88,9 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .song.cross{border-color:rgba(255,209,102,.45);background:linear-gradient(90deg,rgba(255,209,102,.12),rgba(255,255,255,.04))}
 .song.cross .st small{color:#ffd166;opacity:.9}
 .meta{flex-wrap:wrap}
+.song.boss.hype{border-color:rgba(0,240,255,.6);background:linear-gradient(90deg,rgba(0,240,255,.16),rgba(255,0,170,.12));animation:hypePulse 1.2s ease-in-out infinite}
+.song.boss.hype .st b{color:#7ef9ff}
+@keyframes hypePulse{50%{box-shadow:0 0 28px -4px #00f0ff}}
 .song.boss{border-color:rgba(255,31,90,.6);background:linear-gradient(90deg,rgba(255,31,90,.18),rgba(255,255,255,.04));animation:bossPulse 1.6s ease-in-out infinite}
 .song.boss .st b{color:#ff4f7d;letter-spacing:.06em}
 @keyframes bossPulse{50%{box-shadow:0 0 26px -4px #ff1f5a}}
@@ -95,7 +98,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 #toast.show{opacity:1;transform:translate(-50%,0)}
 /* song detail portrait */
 .dPortrait{float:right;width:92px;margin:-8px -6px 4px 10px;filter:drop-shadow(0 8px 14px rgba(0,0,0,.45))}
-.dPortrait svg{width:100%;height:auto;display:block}
+.dPortrait img{width:100%;height:auto;display:block;border-radius:12px}
 .dUnit{margin-top:4px;font-weight:800;font-size:13px}
 .smallbtn{padding:4px 10px;border-radius:9px;background:rgba(255,80,110,.18);border:1px solid rgba(255,80,110,.5);font-size:12px;font-weight:800}
 .song.mine{border-style:dashed}
@@ -103,7 +106,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 /* story */
 .members{display:flex;gap:14px;margin:12px 0 4px}
 .member{flex:1;text-align:center;font-size:12.5px;opacity:.9}
-.member svg{width:100%;max-width:140px;height:auto;filter:drop-shadow(0 8px 14px rgba(0,0,0,.4))}
+.member img{width:100%;max-width:140px;height:auto;filter:drop-shadow(0 8px 14px rgba(0,0,0,.4))}
 .member b{display:block;font-size:15px;opacity:1}
 .udesc{margin-top:8px;line-height:1.6;opacity:.85;font-size:14px}
 .chapters{display:flex;flex-direction:column;gap:8px;margin-top:14px}
@@ -114,8 +117,8 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .newTag{background:#ff5aa8;color:#fff;border-radius:999px;padding:2px 8px;font-size:11px;margin-left:6px;vertical-align:middle}
 #reader{justify-content:flex-end;padding:0 12px;cursor:pointer;background:linear-gradient(180deg,rgba(9,10,26,.2),rgba(9,10,26,.75))}
 .vnStage{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;gap:2vw;padding-bottom:150px;pointer-events:none}
-.vnStage svg{height:min(56vh,430px);width:auto;transition:filter .25s,transform .25s;filter:brightness(.42) saturate(.55);transform:translateY(12px) scale(.95)}
-.vnStage svg.speaking{filter:drop-shadow(0 10px 24px rgba(0,0,0,.5));transform:none}
+.vnStage img{height:min(56vh,430px);width:auto;max-width:45vw;object-fit:contain;transition:filter .25s,transform .25s;filter:brightness(.42) saturate(.55);transform:translateY(12px) scale(.95)}
+.vnStage img.speaking{filter:drop-shadow(0 10px 24px rgba(0,0,0,.5));transform:none}
 .vnBox{position:relative;width:min(860px,100%);margin:0 auto 16px;padding:22px 24px 28px;border-radius:22px;background:rgba(12,14,34,.92);border:2px solid var(--vc,#fff);min-height:120px}
 .vnName{position:absolute;top:-16px;left:20px;padding:4px 16px;border-radius:999px;background:var(--vc,#fff);color:#0a0d1f;font-weight:900}
 .vnText{font-size:clamp(16px,2.4vw,20px);line-height:1.6;margin-top:4px;min-height:2em}
@@ -297,6 +300,7 @@ const SONGS = [
   { id:'interchange', title:'Interchange',        artist:'Prism Stage Original', bpm:168, root:64, mode:'major', prog:[3,4,0,5], seed:331, color:'#66e0ff', color2:'#ffb347', levels:[3,8,15,23,29,34,'∞'], cross:true, roads:3 },
   { id:'spaghetti',   title:'Spaghetti Junction', artist:'Prism Stage Original', bpm:196, root:59, mode:'minor', prog:[0,6,5,4], seed:347, color:'#ff5fa2', color2:'#b6f36b', levels:[4,11,19,27,32,38,'∞'], cross:true, roads:3 },
   { id:'prismbreaker', title:'PRISM BREAKER', artist:'Prism Stage Original', bpm:200, root:58, mode:'minor', prog:[0,5,6,4], seed:999, color:'#ff1f5a', color2:'#ffffff', levels:[5,12,20,28,33,'50','∞'], boss:true },
+  { id:'terminal',    title:'TERMINAL VELOCITY',  artist:'Prism Stage Original', bpm:400, root:57, mode:'minor', prog:[5,3,6,0], seed:4000, color:'#00f0ff', color2:'#ff00aa', levels:[7,16,25,33,40,'60','∞'], hype:true, long:true },
 ];
 const BEGINNER_WIN = { perfect:0.07, great:0.13, good:0.19, bad:0.25 };
 const LEADIN = 2.2;
@@ -350,11 +354,18 @@ function makePhrase(R, dense, lo, hi){
 }
 
 // Song structure. Faster songs get extra verse/build/chorus rounds so every song lasts a while.
-function songPlan(bpm){
-  const p = [['intro',4],['verse',8],['build',4],['chorus',12],['break',8],['verse',8],['build',4],['chorus',12]];
-  if (bpm >= 170) p.push(['verse',8],['build',4],['chorus',12]);
-  if (bpm >= 230) p.push(['break',4],['build',4],['chorus',12]);
-  p.push(['outro',4]);
+function songPlan(bpm, long){
+  let p;
+  if (long){            // ~3 minute marathon: 5 big rounds
+    p = [['intro',8]];
+    for (let r = 0; r < 5; r++){ p.push(['verse',16],['build',8],['chorus',24]); if (r < 4) p.push(['break',8]); }
+    p.push(['outro',8]);
+  } else {
+    p = [['intro',4],['verse',8],['build',4],['chorus',12],['break',8],['verse',8],['build',4],['chorus',12]];
+    if (bpm >= 170) p.push(['verse',8],['build',4],['chorus',12]);
+    if (bpm >= 230) p.push(['break',4],['build',4],['chorus',12]);
+    p.push(['outro',4]);
+  }
   const bars = [], round = {};
   for (const [sec, len] of p){
     const r = round[sec] || 0;
@@ -370,7 +381,8 @@ function generateSong(song){
   const deg = i => song.root + sc[((i % 7) + 7) % 7] + 12 * Math.floor(i / 7);
   const step = 60 / song.bpm / 4;
   const audio = [], cands = [];
-  const plan = songPlan(song.bpm), NB = plan.length;
+  const plan = songPlan(song.bpm, song.long), NB = plan.length;
+  const lastChorus = Math.max(...plan.filter(b => b.sec === 'chorus').map(b => b.round));
   // the chorus hook stays the same every time; verses, builds and breaks get new melodies each round
   const hook = makePhrase(R, true, 9, 15);
   const cache = {};
@@ -387,10 +399,12 @@ function generateSong(song){
   for (let bar = 0; bar < NB; bar++){
     const { sec, rel, len, round } = plan[bar], last = bar === NB - 1;
     const c = song.prog[bar % 4], gs0 = bar * 16;
+    const tr = song.hype && sec === 'chorus' && round === lastChorus ? 2 : 0;   // key change for the last chorus
+    const dg = d => deg(d) + tr;
     const add = (s, type, o) => audio.push(Object.assign({ t:(gs0 + s) * step, type }, o || {}));
     const cand = (s, kind, o) => cands.push(Object.assign({ gs:gs0 + s, kind }, o || {}));
 
-    if (!last) add(0, 'pad', { notes:[deg(c), deg(c+2), deg(c+4)], dur:16*step*0.98, vol: sec === 'chorus' ? 1 : sec === 'break' ? 0.9 : 0.75 });
+    if (!last) add(0, 'pad', { notes:[dg(c), dg(c+2), dg(c+4)], dur:16*step*0.98, vol: sec === 'chorus' ? 1 : sec === 'break' ? 0.9 : 0.75 });
 
     let kicks = [], snares = [], hats = [], ohats = [];
     if (sec === 'intro'){
@@ -432,7 +446,22 @@ function generateSong(song){
     else if (sec === 'build') bass = [0,2,4,6,8,10,12,14].map(s => [s,2,0]);
     else if (sec === 'chorus') bass = [0,2,4,6,8,10,12,14].map((s,i) => [s,2,i % 2 ? 12 : 0]);
     else if (sec === 'outro') bass = last ? [[0,8,0]] : [[0,12,0]];
-    bass.forEach(([s,l,o]) => add(s, 'bass', { midi:deg(c) - 24 + o, dur:l * step * 0.9 }));
+    bass.forEach(([s,l,o]) => add(s, 'bass', { midi:dg(c) - 24 + o, dur:l * step * 0.9 }));
+
+    // extra hype layers: arpeggios, driving drums, risers and impacts
+    if (song.hype){
+      if (sec === 'chorus'){
+        add(14, 'kick');
+        [1,3,5,7,9,11,13,15].forEach(s => add(s, 'hat'));
+        if (rel === 0) add(0, 'impact');
+      }
+      if (sec === 'verse' || sec === 'chorus'){
+        const tones = [c, c + 2, c + 4, c + 7, c + 4, c + 2];
+        for (let s = 0; s < 16; s += 2) add(s, 'arp', { midi: dg(tones[(s / 2 + bar) % tones.length]) + 12, dur: step * 1.8, vol: sec === 'chorus' ? 1 : 0.7 });
+      }
+      if (sec === 'build' && rel === 0) add(0, 'riser', { dur: len * 16 * step });
+      if (sec === 'break' && rel === 0) add(0, 'impact');
+    }
 
     let P = null;
     const pair = Math.floor(rel / 2) % 2;
@@ -446,18 +475,18 @@ function generateSong(song){
         if (n.s < half || n.s >= half + 16) continue;
         const s = n.s - half;
         const d = (s % 8 === 0) ? snap(n.d, c) : n.d;
-        const midi = deg(d);
-        add(s, 'lead', { midi, dur:n.len * step * 0.92, bright: sec === 'chorus' });
+        const midi = dg(d);
+        add(s, 'lead', { midi, dur:n.len * step * 0.92, bright: sec === 'chorus', saw: song.hype && sec === 'chorus' });
         cand(s, 'mel', { midi, len:n.len });
       }
     }
     if (sec === 'outro' && !last && rel % 2 === 0){
-      const midi = deg(snap(10, c));
+      const midi = dg(snap(10, c));
       add(0, 'lead', { midi, dur:14 * step });
       cand(0, 'mel', { midi, len:14 });
     }
     if (last){
-      const midi = deg(snap(14, c));
+      const midi = dg(snap(14, c));
       add(0, 'lead', { midi, dur:12 * step, bright:true });
       cand(0, 'mel', { midi, len:2, final:true });
     }
@@ -472,10 +501,11 @@ function buildBeginnerChart(G){
   const step = G.step, notes = [];
   const by = new Map();
   for (const c of G.cands){ if (!by.has(c.gs)) by.set(c.gs, []); by.get(c.gs).push(c); }
-  const steps = [...by.keys()].filter(gs => gs % 8 === 0).sort((a,b) => a - b);
+  const bGap = G.song.bpm > 300 ? 16 : 8;
+  const steps = [...by.keys()].filter(gs => gs % bGap === 0).sort((a,b) => a - b);
   let lastGs = -99, lastLane = 3, lastMidi = null;
   for (const gs of steps){
-    if (gs - lastGs < 8) continue;
+    if (gs - lastGs < bGap) continue;
     const list = by.get(gs);
     const mel = list.find(c => c.kind === 'mel');
     let lane;
@@ -666,10 +696,125 @@ function buildBossChart(G){
   return notes;
 }
 
+/* TERMINAL VELOCITY — MASTER 60. 400 BPM, ~3 minutes of 8th-note streams (13+ notes/second) with
+   16th-note bursts, chords, slides and a different gimmick in every breakdown. */
+function buildHypeChart(G){
+  const step = G.step, beat = G.beat, plan = G.plan, notes = [], events = [], R = rng(777);
+  const T = (bar, s) => (bar * 16 + s) * step;
+  const occ = (t, l) => {
+    for (let k = notes.length - 1; k >= 0 && k >= notes.length - 80; k--){
+      const n = notes[k];
+      const lo = Math.min(n.lane, n.lane2 ?? n.lane), hi = Math.max(n.lane, n.lane2 ?? n.lane) + n.w;
+      if (l >= lo && l < hi && (Math.abs(n.t - t) < step * 0.45 || (n.type === 'hold' && t >= n.t - step * 0.45 && t <= n.end + step * 0.45))) return true;
+    }
+    return false;
+  };
+  const put = (t, lane, o = {}) => {
+    const w = o.w || 1, to = o.to ?? lane;
+    for (let i = Math.min(lane, to); i <= Math.max(lane, to) + w - 1; i++) if (i < 0 || i >= LANES || occ(t, i)) return null;
+    const n = { t, lane, w, type: o.type || 'tap', end: o.end || 0 };
+    if (n.type === 'hold') n.lane2 = to;
+    if (o.crit) n.crit = true;
+    notes.push(n); return n;
+  };
+  const chord = (t, lanes, o) => lanes.forEach(l => put(t, l, o));
+  const ev = e => events.push(e);
+  const banner = (t, text, color) => ev({ kind:'text', t0:t, t1:t + 1.3, text, color: color || '#00f0ff' });
+  const lastChorus = Math.max(...plan.filter(b => b.sec === 'chorus').map(b => b.round));
+  let lastL = 2, lastR = 3;
+  const pickL = () => { let l; do l = Math.floor(R() * 3); while (l === lastL); return (lastL = l); };
+  const pickR = () => { let l; do l = 3 + Math.floor(R() * 3); while (l === lastR); return (lastR = l); };
+
+  for (let bar = 0; bar < plan.length; bar++){
+    const { sec, rel, len, round } = plan[bar], last = bar === plan.length - 1;
+    const t0 = T(bar, 0), t1 = T(bar + 1, 0);
+
+    if (sec === 'intro'){
+      if (rel === 0){ banner(t0, 'TERMINAL VELOCITY', '#00f0ff'); ev({ kind:'flash', t0 }); }
+      if (rel < 4) [0, 8].forEach((s, i) => put(T(bar, s), (rel + i) % 2 ? 3 : 0, { w:3, type:'flick', crit: s === 0 && rel === 0 }));
+      else if (rel < 7) for (let s = 0; s < 16; s += 2) put(T(bar, s), rel < 6 ? (s % 4 ? 3 : 2) : (s % 4 ? 4 : 1));
+      else { for (let s = 0; s < 12; s += 2) put(T(bar, s), s % 4 ? 3 : 2); [0,1,2,3].forEach((l, i) => put(T(bar, 12 + i), l)); }
+    }
+
+    else if (sec === 'verse'){
+      const q = Math.floor(rel / 2) % 4;
+      if (rel === 0) banner(t0, ['STREAM', 'STREAM II', 'STREAM III', 'STREAM IV', 'LAST STREAM'][round], '#7ef0ff');
+      if (q === 3 && rel % 2 === 0) put(t0, 0, { type:'hold', end:T(bar + 1, 8), to:2 });
+      for (let s = 0; s < 16; s += 2){
+        if (round === 0 && s % 8 === 6) continue;              // first round leaves small gaps
+        const k = (rel * 8 + s / 2);
+        const l = q === 0 ? [0,1,2,3,4,5,4,3,2,1][k % 10] : q === 1 ? [0,5,1,4,2,3,1,4][k % 8] : q === 2 ? [1,3,2,4][k % 4] : [3,4,5,4][k % 4];
+        put(T(bar, s), l);
+      }
+      if (round >= 1 && rel % 2 === 0) put(t0, rel % 4 ? 5 : 0);
+      if (round >= 2 && rel % 4 === 3) [0,1,2,3].forEach(i => put(T(bar, 12 + i), [5,4,3,2][i]));   // 16th burst
+    }
+
+    else if (sec === 'build'){
+      ev({ kind:'shake', t0, t1, a0: rel / len * 8, a1: (rel + 1) / len * 8 });
+      if (rel === 0) banner(t0, 'ACCELERATE', '#ff00aa');
+      if (rel < len - 2){
+        const pr = [[0,5],[1,4],[2,3],[1,4]];
+        for (let s = 0; s < 16; s += 2) s % 4 === 0 ? chord(T(bar, s), pr[(rel * 4 + s / 4) % 4]) : put(T(bar, s), s % 8 === 2 ? 2 : 3);
+      } else if (rel === len - 2){
+        const st = [0,1,2,3,4,5,4,3,2,1,0,1,2,3,4,5];
+        for (let s = 0; s < 16; s++) put(T(bar, s), st[s]);
+      } else {
+        for (let s = 0; s < 8; s++) put(T(bar, s), 5 - (s % 6));
+        chord(T(bar, 8), [0,1,4,5], { crit:true });
+      }
+    }
+
+    else if (sec === 'chorus'){
+      const final = round === lastChorus;
+      if (rel === 0){
+        ev({ kind:'flash', t0 });
+        banner(t0, final ? 'OVERDRIVE' : ['DROP', 'DROP II', 'DROP III', 'DROP IV'][round] || 'DROP', final ? '#ffffff' : '#ff00aa');
+      }
+      if (final) ev({ kind:'speed', t0, t1, speed:1.15 });
+      const anchor = rel % 8 === 4 || rel % 8 === 5;
+      if (rel % 8 === 4) put(t0, 3, { type:'hold', end:T(bar + 1, 12), to:5 });
+      for (let s = 0; s < 16; s += 2){
+        if (s === 0 && rel % 8 === 0){ put(t0, 2, { w:2, crit:true }); continue; }
+        if (anchor){ put(T(bar, s), pickL()); continue; }
+        const left = s % 4 === 0;
+        put(T(bar, s), left ? pickL() : pickR());
+        if (round >= 1 && s % 4 === 0) put(T(bar, s), pickR());
+        if (round >= 3 && s % 8 === 0) put(T(bar, s), left ? pickL() : pickR());
+      }
+      if (round >= 2 && rel % 4 === 1) [0,1,2,3].forEach(i => put(T(bar, 13) + i * step * 0.75, [0,1,2,3][i]));
+      if (rel % 4 === 3 && !anchor){ put(T(bar, 15), 0, { w:2, type:'flick' }); }
+      if (rel === len - 1){ chord(T(bar, 14), [0, 5], { type:'flick', crit:true }); }
+    }
+
+    else if (sec === 'break'){
+      const g = round % 4;
+      if (rel === 0) banner(t0, ['SLOW · HIDDEN', 'FAST · SUDDEN', 'STUTTER', 'BLACKOUT'][g], ['#8ea2ff', '#ff7a3d', '#ffd23f', '#c77dff'][g]);
+      if (g === 0){ ev({ kind:'speed', t0, t1, speed:0.5 }); ev({ kind:'hidden', t0, t1 }); }
+      if (g === 1){ ev({ kind:'speed', t0, t1, speed:2.0 }); ev({ kind:'sudden', t0, t1 }); }
+      if (g === 2) for (let b = 0; b < 4; b++) ev({ kind:'speed', t0:T(bar, b * 4), t1:T(bar, b * 4 + 4), speed: b % 2 ? 1.7 : 0.5 });
+      if (g === 3) ev({ kind:'hidden', t0, t1 });
+      const eighths = g === 1 || g === 3;
+      for (let s = 0; s < 16; s += eighths ? 2 : 4) put(T(bar, s), (eighths ? [0,5,1,4,2,3] : [1,4,2,3])[((rel * 16 + s) / (eighths ? 2 : 4)) % (eighths ? 6 : 4)]);
+    }
+
+    else if (sec === 'outro'){
+      if (last){ put(t0, 0, { w:6, type:'flick', crit:true }); ev({ kind:'flash', t0 }); banner(t0, 'TERMINAL VELOCITY · CLEAR', '#ffffff'); }
+      else if (rel === 0){ put(t0, 0, { type:'hold', end:T(bar + 2, 0), to:2 }); put(t0, 5, { type:'hold', end:T(bar + 2, 0), to:3 }); }
+      else if (rel < 6 && rel > 1) for (let s = 0; s < 16; s += 2) put(T(bar, s), s % 4 ? 3 : 2);
+      else if (rel === 6) [0, 4, 8, 12].forEach((s, i) => chord(T(bar, s), [[1,4],[2,3],[0,5],[2,3]][i]));
+    }
+  }
+  notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
+  notes.events = events;
+  return notes;
+}
+
 function buildChart(G, level){
   if (level === 0) return buildBeginnerChart(G);
   if (level === 5) return buildMasterChart(G);
   level -= 1;
+  const minSec = G.song.bpm > 300 ? [0.3, 0.19, 0.12, 0.075][level] : 0;
   const step = G.step;
   const minGap = [4,2,2,1][level], align = [4,2,1,1][level];
   const by = new Map();
@@ -709,7 +854,7 @@ function buildChart(G, level){
       if (!src) continue;
       if (level === 0 && sb % 8 !== 0) continue;
     }
-    if (gs - lastGs < minGap && !isFinal) continue;
+    if ((gs - lastGs < minGap || (gs - lastGs) * step < minSec) && !isFinal) continue;
 
     let lane, type = 'tap', w = 1, end = 0;
     if (src.kind === 'mel') lane = Math.round((src.midi - minP) / Math.max(1, maxP - minP) * (LANES - 1));
@@ -765,7 +910,7 @@ function getChart(i, d){
   const saved = LANES;
   setLayout(6);
   try {
-    let ch = song.boss && d === 5 ? buildBossChart(g) : d === INSANE ? buildMasterChart(g) : buildChart(g, d);
+    let ch = song.boss && d === 5 ? buildBossChart(g) : song.hype && d === 5 ? buildHypeChart(g) : d === INSANE ? buildMasterChart(g) : buildChart(g, d);
     if (song.cross) ch = assignRoads(ch, g, d, song.roads);
     return (g.charts[d] = ch);
   } finally { setLayout(saved); }
@@ -849,7 +994,25 @@ function playEvent(e, t){
       tone(t, e.midi, e.dur, 'square', 0.045, e.bright ? 3200 : 2200, 0.008, -6);
       tone(t, e.midi, e.dur, 'sawtooth', 0.045, e.bright ? 4200 : 2600, 0.008, 6);
       if (e.bright) tone(t, e.midi + 12, e.dur, 'triangle', 0.03, 5000, 0.01, 0);
+      if (e.saw){ tone(t, e.midi, e.dur, 'sawtooth', 0.03, 5200, 0.006, -16); tone(t, e.midi, e.dur, 'sawtooth', 0.03, 5200, 0.006, 16); tone(t, e.midi + 12, e.dur, 'sawtooth', 0.018, 6000, 0.006, 4); }
       break;
+    case 'arp': tone(t, e.midi, e.dur, 'square', 0.026 * (e.vol || 1), 3200, 0.003); break;
+    case 'impact': {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.9);
+      g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+      o.connect(g); g.connect(OUT); o.start(t); o.stop(t + 1.25);
+      noise(t, 0.9, 200, 0.35);
+      break;
+    }
+    case 'riser': {
+      const src = AC.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+      const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.5;
+      f.frequency.setValueAtTime(400, t); f.frequency.exponentialRampToValueAtTime(9000, t + e.dur);
+      const g = AC.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.28, t + e.dur * 0.97); g.gain.linearRampToValueAtTime(0, t + e.dur);
+      src.connect(f); f.connect(g); g.connect(OUT); src.start(t); src.stop(t + e.dur + 0.05);
+      break;
+    }
   }
 }
 function sfx(kind){
@@ -1061,73 +1224,23 @@ function backToMenu(){
 
 /* ================= CHARACTERS ================= */
 const CHARS = {
-  prism:  { name:'Prism',          role:'Spirit of the Stage', color:'#ffe066' },
-  aoi:    { name:'Aoi Kurose',     role:'Guitar & vocals',   hair:'#1f3c88', hair2:'#3d6fe0', eye:'#3aa0ff', skin:'#ffe0cc', shirt:'#20263a', acc:'clip',    style:'short', color:'#4d9dff' },
-  mika:   { name:'Mika Tendo',     role:'Drums',             hair:'#c9541f', hair2:'#ff9a4d', eye:'#ff8a3d', skin:'#f9d3b5', shirt:'#f2f2f2', acc:'band',    style:'pony',  color:'#ff9a4d' },
-  hana:   { name:'Hana Sakuraba',  role:'Lead singer',       hair:'#f27aae', hair2:'#ffc6de', eye:'#ff5aa8', skin:'#ffe4d6', shirt:'#ffe3f0', acc:'star',    style:'twin',  color:'#ff7ab8' },
-  yuzu:   { name:'Yuzu Mori',      role:'Dance & harmony',   hair:'#e0aa2e', hair2:'#ffe08a', eye:'#f0a000', skin:'#ffe0c8', shirt:'#fff3c4', acc:'bow',     style:'bob',   color:'#ffd166' },
-  kai:    { name:'Kai Ishida',     role:'Rapper',            hair:'#2b2140', hair2:'#5a3fa0', eye:'#b38bff', skin:'#e9b896', shirt:'#2a2a2a', acc:'cap',     style:'short', color:'#a66bff' },
-  ren:    { name:'Ren Asahina',    role:'Beatbox & DJ',      hair:'#2f9e6a', hair2:'#7dffb3', eye:'#3fd68a', skin:'#f3c9a8', shirt:'#1b3b2e', acc:'phones',  style:'messy', color:'#5ee89a' },
-  shiori: { name:'Shiori Kanzaki', role:'Composer',          hair:'#174f4d', hair2:'#2fa59f', eye:'#3fd6c6', skin:'#fde4d4', shirt:'#1a1f2e', acc:'glasses', style:'long',  color:'#3fd6c6' },
-  noa:    { name:'Noa Fuyutsuki',  role:'Lyrics & mixing',   hair:'#b9b2f0', hair2:'#ffffff', eye:'#8f7dff', skin:'#fdebe0', shirt:'#2d2850', acc:'phones',  style:'bob',   color:'#b9b2ff' },
+  prism:  { name:'Prism',          role:'Spirit of the Stage', img:'', color:'#ffe066' },
+  aoi:    { name:'Aoi Kurose',     role:'Guitar & vocals', img:'', color:'#4d9dff' },
+  mika:   { name:'Mika Tendo',     role:'Drums', img:'', color:'#ff9a4d' },
+  hana:   { name:'Hana Sakuraba',  role:'Lead singer', img:'', color:'#ff7ab8' },
+  yuzu:   { name:'Yuzu Mori',      role:'Dance & harmony', img:'', color:'#ffd166' },
+  kai:    { name:'Kai Ishida',     role:'Rapper', img:'', color:'#a66bff' },
+  ren:    { name:'Ren Asahina',    role:'Beatbox & DJ', img:'', color:'#5ee89a' },
+  shiori: { name:'Shiori Kanzaki', role:'Composer', img:'', color:'#3fd6c6' },
+  noa:    { name:'Noa Fuyutsuki',  role:'Lyrics & mixing', img:'', color:'#b9b2ff' },
 };
 
-// Hand-drawn (in code) character portraits. face: neutral | smile | open | wink | sad
+// Character pictures: put a direct image link in a character's `img` (e.g. https://i.postimg.cc/.../aoi.png).
+// Optional per-expression pictures: imgs: { smile:'…', sad:'…' }. With no picture, the story shows text only.
 function portrait(cid, face = 'neutral', cls = ''){
-  const id = 'p' + cid + Math.random().toString(36).slice(2, 8);
-  if (cid === 'prism') return prismSVG(face, cls, id);
-  const c = CHARS[cid], H = `url(#${id})`, ink = '#2a2030';
-  let back = '';
-  if (c.style === 'long') back = `<path d="M46 100 Q40 38 100 34 Q160 38 154 100 L162 218 Q100 232 38 218Z" fill="${H}"/>`;
-  else if (c.style === 'twin') back = `<ellipse cx="36" cy="150" rx="20" ry="60" fill="${H}"/><ellipse cx="164" cy="150" rx="20" ry="60" fill="${H}"/>`;
-  else if (c.style === 'pony') back = `<path d="M138 66 Q192 86 180 168 Q172 202 150 206 Q166 150 138 108Z" fill="${H}"/>`;
-  else if (c.style === 'bob') back = `<path d="M48 100 Q44 42 100 38 Q156 42 152 100 L156 152 Q130 162 100 160 Q70 162 44 152Z" fill="${H}"/>`;
-  const body = `<rect x="88" y="146" width="24" height="40" rx="9" fill="${c.skin}"/><rect x="88" y="146" width="24" height="40" rx="9" fill="rgba(120,60,40,.12)"/>
-    <path d="M16 240 Q24 184 100 178 Q176 184 184 240Z" fill="${c.shirt}"/><path d="M78 181 L100 206 L122 181" fill="none" stroke="${c.color}" stroke-width="5" stroke-linejoin="round"/>`;
-  const head = `<ellipse cx="100" cy="112" rx="47" ry="52" fill="${c.skin}"/>`;
-  const openEye = x => `<ellipse cx="${x}" cy="117" rx="9.5" ry="12.5" fill="${c.eye}"/><ellipse cx="${x}" cy="120" rx="5.5" ry="7.5" fill="rgba(20,10,30,.6)"/><circle cx="${x - 3}" cy="111" r="3.6" fill="#fff"/><circle cx="${x + 3}" cy="123" r="1.6" fill="#fff"/><path d="M${x - 11} 106 Q${x} 99 ${x + 11} 106" stroke="${ink}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
-  const shutEye = x => `<path d="M${x - 10} 118 Q${x} 106 ${x + 10} 118" stroke="${ink}" stroke-width="3.6" fill="none" stroke-linecap="round"/>`;
-  let eyes = face === 'smile' ? shutEye(80) + shutEye(120) : face === 'wink' ? openEye(80) + shutEye(120) : openEye(80) + openEye(120);
-  if (face === 'sad') eyes += `<path d="M70 99 L89 94 M130 99 L111 94" stroke="${ink}" stroke-width="3" stroke-linecap="round"/>`;
-  const mouth = {
-    smile: `<path d="M87 139 Q100 152 113 139" stroke="#8a3b4a" stroke-width="3.6" fill="none" stroke-linecap="round"/>`,
-    wink:  `<path d="M88 139 Q100 151 112 139" stroke="#8a3b4a" stroke-width="3.6" fill="none" stroke-linecap="round"/>`,
-    open:  `<ellipse cx="100" cy="143" rx="8.5" ry="7.5" fill="#8a3b4a"/><ellipse cx="100" cy="147" rx="5" ry="3" fill="#ff8fa3"/>`,
-    sad:   `<path d="M90 147 Q100 139 110 147" stroke="#8a3b4a" stroke-width="3.4" fill="none" stroke-linecap="round"/>`,
-    neutral: `<path d="M93 143 L107 143" stroke="#8a3b4a" stroke-width="3.4" stroke-linecap="round"/>`,
-  }[face] || '';
-  const blush = `<ellipse cx="72" cy="134" rx="9" ry="5" fill="#ff7a9a" opacity="${face === 'sad' ? .15 : .35}"/><ellipse cx="128" cy="134" rx="9" ry="5" fill="#ff7a9a" opacity="${face === 'sad' ? .15 : .35}"/>`;
-  const bangs = c.style === 'messy'
-    ? `<path d="M50 108 Q44 44 100 40 Q156 44 150 108 L141 80 L132 101 L121 73 L109 97 L99 69 L89 97 L77 73 L67 101 L58 80Z" fill="${H}"/>`
-    : `<path d="M51 108 Q46 44 100 40 Q154 44 149 108 Q142 78 124 84 Q112 63 100 86 Q88 63 76 84 Q60 80 51 108Z" fill="${H}"/>`;
-  const locks = (c.style === 'bob' || c.style === 'long' || c.style === 'twin') ? `<path d="M52 98 Q45 132 57 154 L65 108Z M148 98 Q155 132 143 154 L135 108Z" fill="${H}"/>` : '';
-  const acc = {
-    clip:    `<rect x="126" y="60" width="20" height="7" rx="3.5" fill="#ffd23f" transform="rotate(-25 136 64)"/><rect x="122" y="70" width="16" height="6" rx="3" fill="#ffffff" transform="rotate(-25 130 73)"/>`,
-    band:    `<path d="M52 84 Q100 50 148 84" stroke="#ffffff" stroke-width="8" fill="none" stroke-linecap="round"/>`,
-    star:    `<path d="M142 50 L147 61 L159 62 L150 70 L153 82 L142 75 L131 82 L134 70 L125 62 L137 61Z" fill="#ffe066" stroke="#fff" stroke-width="2"/>`,
-    bow:     `<path d="M60 58 L42 47 L42 71Z M60 58 L78 47 L78 71Z" fill="#ff5a7a"/><circle cx="60" cy="58" r="6" fill="#ff8fa3"/>`,
-    cap:     `<path d="M50 86 Q50 30 100 28 Q150 30 150 86Z" fill="#26222e"/><path d="M42 86 Q100 70 172 90 L168 99 Q100 84 46 95Z" fill="#141218"/><circle cx="100" cy="58" r="10" fill="${c.color}"/>`,
-    phones:  `<path d="M44 114 Q42 32 100 30 Q158 32 156 114" stroke="#2b2b33" stroke-width="8" fill="none"/><rect x="32" y="100" width="20" height="32" rx="9" fill="${c.hair2}" stroke="#2b2b33" stroke-width="3"/><rect x="148" y="100" width="20" height="32" rx="9" fill="${c.hair2}" stroke="#2b2b33" stroke-width="3"/>`,
-    glasses: `<rect x="65" y="104" width="30" height="23" rx="9" fill="rgba(200,230,255,.16)" stroke="${ink}" stroke-width="3"/><rect x="105" y="104" width="30" height="23" rx="9" fill="rgba(200,230,255,.16)" stroke="${ink}" stroke-width="3"/><path d="M95 114 L105 114" stroke="${ink}" stroke-width="3"/>`,
-  }[c.acc] || '';
-  return `<svg viewBox="0 0 200 240" class="${cls}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c.hair2}"/><stop offset="1" stop-color="${c.hair}"/></linearGradient></defs>${back}${body}${head}${eyes}${mouth}${blush}${bangs}${locks}${acc}</svg>`;
-}
-function prismSVG(face, cls, id){
-  const ink = '#2a2030';
-  const eye = x => face === 'smile' ? `<path d="M${x - 9} 124 Q${x} 113 ${x + 9} 124" stroke="${ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`
-    : face === 'wink' && x > 100 ? `<path d="M${x - 9} 124 Q${x} 113 ${x + 9} 124" stroke="${ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`
-    : `<ellipse cx="${x}" cy="120" rx="7" ry="10" fill="${ink}"/><circle cx="${x - 2}" cy="115" r="3" fill="#fff"/>`;
-  const mouth = face === 'open' ? `<ellipse cx="100" cy="146" rx="7" ry="6" fill="${ink}"/>` : face === 'sad' ? `<path d="M91 150 Q100 142 109 150" stroke="${ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>` : `<path d="M90 142 Q100 152 110 142" stroke="${ink}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
-  const spark = (x, y, r) => `<path d="M${x} ${y - r} Q${x} ${y} ${x + r} ${y} Q${x} ${y} ${x} ${y + r} Q${x} ${y} ${x - r} ${y} Q${x} ${y} ${x} ${y - r}Z" fill="#fff"/>`;
-  return `<svg viewBox="0 0 200 240" class="${cls}" xmlns="http://www.w3.org/2000/svg"><defs>
-    <linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8bd8"/><stop offset=".5" stop-color="#ffe066"/><stop offset="1" stop-color="#7ef0ff"/></linearGradient>
-    <radialGradient id="${id}g"><stop offset="0" stop-color="rgba(255,255,255,.55)"/><stop offset="1" stop-color="rgba(255,255,255,0)"/></radialGradient></defs>
-    <circle cx="100" cy="128" r="96" fill="url(#${id}g)"/>
-    <polygon points="100,34 166,128 100,222 34,128" fill="url(#${id})" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
-    <polygon points="100,52 150,128 100,128" fill="rgba(255,255,255,.35)"/>
-    ${eye(82)}${eye(118)}${mouth}
-    <ellipse cx="72" cy="140" rx="8" ry="4.5" fill="#ff7a9a" opacity=".45"/><ellipse cx="128" cy="140" rx="8" ry="4.5" fill="#ff7a9a" opacity=".45"/>
-    ${spark(170, 50, 12)}${spark(30, 70, 9)}${spark(176, 190, 8)}</svg>`;
+  const c = CHARS[cid];
+  const src = c && ((c.imgs && c.imgs[face]) || c.img);
+  return src ? `<img src="${src}" alt="${c.name}" class="${cls}" referrerpolicy="no-referrer" loading="lazy">` : '';
 }
 
 /* ================= STORY ================= */
@@ -1293,7 +1406,10 @@ function renderStory(){
   const on = document.querySelector('#unitList .song.on');
   if (on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' });
 }
-function portraitMini(cid){ return `<span style="display:block;width:46px;height:46px;overflow:hidden;border-radius:12px">${portrait(cid, 'smile').replace('<svg ', '<svg style="width:60px;margin:-4px 0 0 -7px" ')}</span>`; }
+function portraitMini(cid){
+  const img = portrait(cid, 'smile');
+  return img ? `<span style="display:block;width:46px;height:46px;overflow:hidden;border-radius:12px">${img.replace('<img ', '<img style="width:100%;height:100%;object-fit:cover;object-position:top" ')}</span>` : CHARS[cid].name[0];
+}
 
 let reader = null;
 function openChapter(ui, c){
@@ -2207,8 +2323,8 @@ function renderSelect(){
   document.documentElement.style.setProperty('--c', s.color);
   document.documentElement.style.setProperty('--c2', s.color2);
   $('songList').innerHTML = SONGS.map((x, i) =>
-    `<button class="song ${i === sel.song ? 'on' : ''} ${x.boss ? 'boss' : x.cross ? 'cross' : x.custom ? 'mine' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
-      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${x.boss ? '★ FINAL BOSS · ' : x.cross ? '⇶ CROSSROADS · ' + x.roads + ' roads · ' : x.custom ? '🎵 YOUR MUSIC · ~' : ''}${x.bpm} BPM</small></span></button>`).join('');
+    `<button class="song ${i === sel.song ? 'on' : ''} ${x.hype ? 'boss hype' : x.boss ? 'boss' : x.cross ? 'cross' : x.custom ? 'mine' : ''}" data-song="${i}" style="--sc:${x.color};--sc2:${x.color2}">
+      <span class="jacket"></span><span class="st"><b>${x.title}</b><small>${x.hype ? '⚡ 3 MIN MARATHON · ' : x.boss ? '★ FINAL BOSS · ' : x.cross ? '⇶ CROSSROADS · ' + x.roads + ' roads · ' : x.custom ? '🎵 YOUR MUSIC · ~' : ''}${x.bpm} BPM</small></span></button>`).join('');
   $('songList').innerHTML += `<button class="song addmusic" data-act="addmusic">🎵 Add your own music <kbd style="margin-left:6px">M</kbd></button>`;
   { const on = document.querySelector('#songList .song.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' }); }
   $('dTitle').textContent = s.title;
