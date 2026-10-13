@@ -381,8 +381,10 @@ function buildBeginnerChart(G){
 function buildMasterChart(G){
   const notes = buildChart(G, 4).map(n => ({ ...n }));
   const step = G.step, R = rng(G.seed * 97 + 13);
-  const occ = (t, l) => notes.some(n => l >= n.lane && l < n.lane + n.w &&
-    (Math.abs(n.t - t) < step * 0.6 || (n.type === 'hold' && t >= n.t - step * 0.5 && t <= n.end + step * 0.5)));
+  const occ = (t, l) => notes.some(n => {
+    const lo = Math.min(n.lane, n.lane2 ?? n.lane), hi = Math.max(n.lane, n.lane2 ?? n.lane) + n.w;
+    return l >= lo && l < hi && (Math.abs(n.t - t) < step * 0.6 || (n.type === 'hold' && t >= n.t - step * 0.5 && t <= n.end + step * 0.5));
+  });
   const has = new Set(notes.map(n => Math.round(n.t / step)));
   let stair = 0, dir = 1, trillA = 1, trillB = 4, mode = 0;
   for (let gs = 16; gs < BARS * 16 - 16; gs++){
@@ -474,8 +476,20 @@ function buildChart(G, level){
 
     const l = place(lane - (w > 1 ? Math.floor(w / 2) : 0), w, t);
     if (l < 0) continue;
-    notes.push({ t, lane:l, w, type, end });
-    for (let i = l; i < l + w; i++) busy[i] = type === 'hold' ? end : t;
+    // some hold notes slide across lanes (further on harder difficulties)
+    let lane2 = l;
+    if (type === 'hold' && R() < [0.3, 0.45, 0.55, 0.65][level]){
+      const dist = 1 + Math.floor(R() * [1, 2, 3, 4][level]);
+      for (const dd of (R() < 0.5 ? [1, -1] : [-1, 1])){
+        const l2 = l + dd * dist;
+        if (l2 < 0 || l2 + w > LANES) continue;
+        let ok = true;
+        for (let i = Math.min(l, l2); i <= Math.max(l, l2) + w - 1; i++) if (busy[i] > t - 0.03) ok = false;
+        if (ok){ lane2 = l2; break; }
+      }
+    }
+    notes.push(type === 'hold' ? { t, lane:l, w, type, end, lane2 } : { t, lane:l, w, type, end });
+    for (let i = Math.min(l, lane2); i <= Math.max(l, lane2) + w - 1; i++) busy[i] = type === 'hold' ? end : t;
     lastGs = gs; lastLane = l;
 
     if (type === 'tap' && w === 1 && sec === 'chorus' && ((level >= 2 && sb === 8) || (level === 3 && (sb === 4 || sb === 12)))){
@@ -606,7 +620,7 @@ const bgParts = Array.from({ length: 34 }, () => ({
 }));
 
 /* ================= LESSONS ================= */
-const N = (b, lane, o = {}) => ({ b, lane, w: o.w || 1, type: o.type || 'tap', len: o.len || 0 });
+const N = (b, lane, o = {}) => ({ b, lane, w: o.w || 1, type: o.type || 'tap', len: o.len || 0, to: o.to });
 const LESSON_COLORS = [['#7dffb3','#4dd9ff'],['#4dd9ff','#7a5cff'],['#ffb347','#ff6f91'],['#ff5fa2','#ffd166'],['#c77dff','#00e5ff']];
 const LESSONS = [
   { title:'Your First Notes', bpm:80, pass:0.6, easy:true,
@@ -625,6 +639,10 @@ const LESSONS = [
     desc:'Green notes with a long tail are <b>hold notes</b>. Press the key when the head reaches the line and <b>keep holding</b> until the tail ends.<br><br>Letting go too early counts as a miss.',
     hint:'Keep the key held down until the green tail ends',
     notes(){ const a = []; for (let k = 0; k < 8; k++){ const b = 4 + k*4; a.push(N(b, k % 2 ? 3 : 2, { type:'hold', len:2 })); a.push(N(b + 3, k % 2 ? 1 : 4)); } return a; } },
+  { title:'Slide Holds', bpm:90, pass:0.7,
+    desc:'Some hold notes <b>slide</b> across lanes. Hold the key, then as the green tail curves, <b>press the next key over and let go of the old one</b>, rolling your finger along with it.<br><br>On a touchscreen, just keep your finger down and drag.',
+    hint:'Follow the green tail: roll onto the next key as it moves',
+    notes(){ const a = [], sl = [[2,0],[3,5],[0,2],[5,3],[2,1],[3,4],[1,2],[4,3]]; for (let k = 0; k < 8; k++){ const b = 4 + k*4, [f, t] = sl[k]; a.push(N(b, f, { type:'hold', len:3, to:t })); } return a; } },
   { title:'Flick Notes', bpm:100, pass:0.75,
     desc:'Pink notes with an arrow are <b>flick notes</b>.<br><br>On a keyboard, just press them like a normal note. On a touchscreen, tap and quickly <b>swipe up</b>.',
     hint:'Pink arrow = flick (keyboard: just press it)',
@@ -645,7 +663,7 @@ const LESSONS = [
     desc:'Everything you\'ve learned, all together: taps, holds, flicks, wide notes and chords.<br><br>Stay relaxed and read the notes a little ahead of the line.',
     hint:'Read ahead: watch the notes coming, not the line',
     notes(){ const a = []; for (let k = 0; k < 8; k++){ const b = 4 + k*4;
-      if (k % 4 === 0){ a.push(N(b, 2, { type:'hold', len:1.5 })); a.push(N(b + 1, 4)); a.push(N(b + 2, 5)); a.push(N(b + 3, 3, { type:'flick' })); }
+      if (k % 4 === 0){ a.push(N(b, 2, { type:'hold', len:1.5, to:0 })); a.push(N(b + 1, 4)); a.push(N(b + 2, 5)); a.push(N(b + 3, 3, { type:'flick' })); }
       else if (k % 4 === 1){ a.push(N(b, 1)); a.push(N(b, 4)); a.push(N(b + 1, 2)); a.push(N(b + 1.5, 3)); a.push(N(b + 2, 2, { w:2 })); a.push(N(b + 3, 0)); }
       else if (k % 4 === 2){ for (let j = 0; j < 4; j++) a.push(N(b + j*0.5, j)); a.push(N(b + 2, 5, { type:'hold', len:1 })); a.push(N(b + 3, 0, { type:'flick' })); }
       else { a.push(N(b, 0)); a.push(N(b, 5)); a.push(N(b + 1, 2)); a.push(N(b + 1, 3)); a.push(N(b + 2, 1, { w:2 })); a.push(N(b + 3, 2, { w:2, type:'flick' })); } }
@@ -679,7 +697,7 @@ function makeLessonGen(i){
   // a little "pluck" on every note so you can hear when to press
   for (const n of raw) audio.push({ t:n.b * beat, type:'lead', midi:deg(n.lane + 7), dur:Math.max(0.12, n.len * beat * 0.9) });
   audio.sort((a, b) => a.t - b.t);
-  const notes = raw.map(n => ({ t:n.b * beat, lane:n.lane, w:n.w, type:n.type, end:n.type === 'hold' ? (n.b + n.len) * beat : 0 }));
+  const notes = raw.map(n => ({ t:n.b * beat, lane:n.lane, w:n.w, type:n.type, end:n.type === 'hold' ? (n.b + n.len) * beat : 0, lane2:n.type === 'hold' ? (n.to ?? n.lane) : undefined }));
   notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
   return { song, step, beat, audio, notes, duration:bars * 16 * step + 1, charts:[] };
 }
@@ -840,7 +858,7 @@ function judge(n, j, tail){
   if (j === 4) G.life -= 60;
   G.lastJudge = { j, at: performance.now() };
   if (j < 4){
-    spawnHit(n, j);
+    spawnHit(n, j, tail);
     sfx(n.type === 'flick' && !tail ? 'flick' : 'tap');
   }
   if (G.noFail) G.life = Math.max(G.life, 1); // Beginner and lessons can't fail
@@ -884,12 +902,15 @@ function update(){
         n.state = 2;
       }
     } else if (n.state === 1){
-      const held = n.src === 'auto' || down.has(n.src);
       if (now >= n.end){ judge(n, 0, true); n.state = 2; }
-      else if (!held){ const rem = n.end - now; judge(n, rem < 0.12 ? 0 : rem < 0.25 ? 2 : 4, true); n.state = 2; }
-      else {
-        for (let l = n.lane; l < n.lane + n.w; l++) G.laneFlash[l] = Math.max(G.laneFlash[l], 0.7);
-        if (Math.random() < 0.45) spawnSpark(n);
+      else if (!holdHeld(n, now)){
+        if (!n.lost) n.lost = now;                       // short grace period to switch keys
+        if (now - n.lost > 0.2){ const rem = n.end - n.lost; judge(n, rem < 0.12 ? 0 : rem < 0.25 ? 2 : 4, true); n.state = 2; }
+      } else {
+        n.lost = 0;
+        const p = holdPos(n, now);
+        for (let l = Math.floor(p + 1e-3); l <= Math.ceil(p + n.w - 1e-3) - 1; l++) G.laneFlash[l] = Math.max(G.laneFlash[l], 0.7);
+        if (Math.random() < 0.45) spawnSpark(n, p);
       }
     } else if (n.state === 3){
       if (now > n.t + 0.22){ judge(n, Math.max(n.pfj, 2)); n.state = 2; }
@@ -903,10 +924,27 @@ function update(){
   if (!G.ended && now > G.gen.duration - 1.5 && G.first >= N.length) endGame();
 }
 
+// Where a (possibly sliding) hold note is at time t, as a lane position (eased curve)
+function holdPos(n, t){
+  if (n.lane2 == null || n.lane2 === n.lane) return n.lane;
+  const f = clamp((t - n.t) / (n.end - n.t), 0, 1);
+  const e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+  return n.lane + (n.lane2 - n.lane) * e;
+}
+// Held if any pressed key / finger is on a lane the hold currently covers
+function holdHeld(n, now){
+  if (n.src === 'auto') return true;
+  const p = holdPos(n, now), lo = Math.floor(p + 1e-3), hi = Math.ceil(p + n.w - 1e-3) - 1;
+  for (let l = lo; l <= hi; l++) if (down.has('k' + l)) return true;
+  for (const q of ptrs.values()) if (q.lane >= lo && q.lane <= hi) return true;
+  return false;
+}
+
 /* ================= EFFECTS ================= */
-function spawnHit(n, j){
+function spawnHit(n, j, tail){
   const G = game;
-  const x = xAt(n.lane + n.w / 2, 1), w = n.w * L.hw / LANES;
+  const lane = tail && n.lane2 != null ? n.lane2 : n.lane;
+  const x = xAt(lane + n.w / 2, 1), w = n.w * L.hw / LANES;
   const col = n.type === 'flick' ? NOTE_COL.flick[0] : n.type === 'hold' ? NOTE_COL.hold[0] : JUDGE_COLORS[j] === '#ffe066' ? '#fff2a8' : NOTE_COL.tap[0];
   G.fx.push({ x, w, life: 0, max: 0.38, col, beam: j === 0 });
   const cnt = j === 0 ? 14 : 8;
@@ -915,8 +953,8 @@ function spawnHit(n, j){
     G.parts.push({ x: x + (Math.random() - .5) * w * 0.8, y: L.judgeY, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0, max: 0.4 + Math.random() * 0.35, col, s: (3 + Math.random() * 4) * L.u });
   }
 }
-function spawnSpark(n){
-  const x = xAt(n.lane + Math.random() * n.w, 1);
+function spawnSpark(n, p){
+  const x = xAt((p ?? n.lane) + Math.random() * n.w, 1);
   game.parts.push({ x, y: L.judgeY, vx: (Math.random() - .5) * 60, vy: -(150 + Math.random() * 250) * L.u, life: 0, max: 0.45, col: NOTE_COL.hold[0], s: (2 + Math.random() * 3) * L.u });
 }
 
@@ -941,9 +979,10 @@ function drawBg(song, t, dt){
   }
 }
 
-function drawNote(n, d, flickPending){
+function drawNote(n, d, flickPending, laneAt){
   const p = proj(d), s = p.s, u = L.u;
-  const x0 = xAt(n.lane + 0.06, s), x1 = xAt(n.lane + n.w - 0.06, s);
+  const lp = laneAt ?? n.lane;
+  const x0 = xAt(lp + 0.06, s), x1 = xAt(lp + n.w - 0.06, s);
   const h = Math.max(4, 30 * s * u), y = p.y;
   const col = NOTE_COL[n.type];
   const g = cx.createLinearGradient(0, y - h / 2, 0, y + h / 2);
@@ -961,19 +1000,33 @@ function drawNote(n, d, flickPending){
     cx.lineWidth = 2 * s; cx.strokeStyle = col[1]; cx.stroke();
   }
 }
-function drawHoldBand(n, dA, dB, active){
+function drawHoldBand(n, dA, dB, active, now, vis){
   if (dB <= dA) return;
   const a = proj(dA), b = proj(dB);
+  const slide = n.lane2 != null && n.lane2 !== n.lane;
+  const SEG = slide ? 20 : 1, left = [], right = [];
+  for (let i = 0; i <= SEG; i++){
+    const d = dA + (dB - dA) * i / SEG, p = proj(d), pos = holdPos(n, now + d * vis);
+    left.push([xAt(pos + 0.16, p.s), p.y]); right.push([xAt(pos + n.w - 0.16, p.s), p.y]);
+  }
   cx.beginPath();
-  cx.moveTo(xAt(n.lane + 0.16, a.s), a.y); cx.lineTo(xAt(n.lane + n.w - 0.16, a.s), a.y);
-  cx.lineTo(xAt(n.lane + n.w - 0.16, b.s), b.y); cx.lineTo(xAt(n.lane + 0.16, b.s), b.y); cx.closePath();
+  cx.moveTo(left[0][0], left[0][1]);
+  for (let i = 1; i < left.length; i++) cx.lineTo(left[i][0], left[i][1]);
+  for (let i = right.length - 1; i >= 0; i--) cx.lineTo(right[i][0], right[i][1]);
+  cx.closePath();
   const g = cx.createLinearGradient(0, a.y, 0, b.y);
   const al = active ? 0.55 + 0.15 * Math.sin(performance.now() / 60) : 0.45;
   g.addColorStop(0, `rgba(110,255,180,${al})`); g.addColorStop(1, 'rgba(110,255,180,.12)');
   cx.fillStyle = g; cx.fill();
+  if (slide){ // bright guide line down the middle of a slide
+    cx.beginPath();
+    for (let i = 0; i <= SEG; i++){ const x = (left[i][0] + right[i][0]) / 2; i ? cx.lineTo(x, left[i][1]) : cx.moveTo(x, left[i][1]); }
+    cx.strokeStyle = `rgba(210,255,230,${active ? 0.95 : 0.7})`; cx.lineWidth = 3 * L.u + 1; cx.stroke();
+  }
   // tail cap
   if (dB <= 1.05){
-    const s = b.s, x0 = xAt(n.lane + 0.16, s), x1 = xAt(n.lane + n.w - 0.16, s), h = Math.max(3, 14 * s * L.u);
+    const tl = holdPos(n, now + dB * vis);
+    const s = b.s, x0 = xAt(tl + 0.16, s), x1 = xAt(tl + n.w - 0.16, s), h = Math.max(3, 14 * s * L.u);
     cx.fillStyle = NOTE_COL.hold[0];
     rr(x0, b.y - h / 2, x1 - x0, h, h / 2); cx.fill();
     cx.strokeStyle = '#fff'; cx.lineWidth = Math.max(1, 2 * s); cx.stroke();
@@ -1052,13 +1105,13 @@ function drawGame(dt){
   }
   for (const n of vis_) if (n.type === 'hold'){
     const dA = n.state === 1 ? 0 : (n.t - now) / vis;
-    drawHoldBand(n, Math.max(-0.15, dA), Math.min(1.05, (n.end - now) / vis), n.state === 1);
+    drawHoldBand(n, Math.max(-0.15, dA), Math.min(1.05, (n.end - now) / vis), n.state === 1, now, vis);
   }
   for (let i = vis_.length - 1; i >= 0; i--){
     const n = vis_[i];
     let d = n.state === 1 || n.state === 3 ? 0 : (n.t - now) / vis;
     if (d < -0.18 || d > 1.05) continue;
-    if (n.state === 1){ cx.save(); cx.shadowColor = NOTE_COL.hold[0]; cx.shadowBlur = 20; drawNote(n, 0); cx.restore(); }
+    if (n.state === 1){ cx.save(); cx.shadowColor = NOTE_COL.hold[0]; cx.shadowBlur = 20; drawNote(n, 0, false, holdPos(n, now)); cx.restore(); }
     else drawNote(n, d, n.state === 3);
   }
 
