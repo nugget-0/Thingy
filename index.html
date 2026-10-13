@@ -713,7 +713,7 @@ function getChart(i, d){
   const g = getGen(i, d), song = SONGS[i];
   if (g.charts[d]) return g.charts[d];
   const saved = LANES;
-  setLayout(song.cross ? 5 : 6);
+  setLayout(6);
   try {
     let ch = song.boss && d === 5 ? buildBossChart(g) : d === INSANE ? buildMasterChart(g) : buildChart(g, d);
     if (song.cross) ch = assignRoads(ch, g, d, song.roads);
@@ -1038,7 +1038,7 @@ function startGame(lessonIdx){
     label = DIFFS[diff].name; labelColor = DIFFS[diff].color;
   }
   const crossMode = lessonIdx == null && !!song.cross;
-  setLayout(crossMode ? 5 : 6);
+  setLayout(6);
   const notes = src.map((n, i) => ({ ...n, state: 0, id: i }));
   const events = src.events || [];
   const total = notes.reduce((a, n) => a + (n.type === 'hold' ? 2 : 1), 0);
@@ -1697,7 +1697,7 @@ function renderSelect(){
     `<button class="diff ${i === sel.diff ? 'on' : ''}" data-diff="${i}" style="--dc:${d.color}"><small>${d.name}</small><b>${s.levels[i]}</b></button>`).join('');
   const ch = getChart(sel.song, sel.diff);
   const best = store.get(`best_${s.id}_${DIFFS[sel.diff].name}`, null);
-  $('meta').innerHTML = (s.cross ? `<span style="color:#ffd166">⇶ ${s.roads} roads · keys D F Space J K</span>` : '') + `<span>${ch.length} notes</span><span>Best: ${best ? best.score.toLocaleString() + ' · ' + best.rank + (best.badge ? ' · ' + best.badge : '') : '—'}</span>`;
+  $('meta').innerHTML = (s.cross ? `<span style="color:#ffd166">⇶ ${s.roads} roads · 6 lanes each</span>` : '') + `<span>${ch.length} notes</span><span>Best: ${best ? best.score.toLocaleString() + ' · ' + best.rank + (best.badge ? ' · ' + best.badge : '') : '—'}</span>`;
   $('oSpeed').textContent = settings.speed;
   $('oOffset').textContent = (settings.offset > 0 ? '+' : '') + settings.offset + ' ms';
   $('oAuto').textContent = settings.auto ? 'ON' : 'OFF';
