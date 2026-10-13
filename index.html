@@ -132,6 +132,15 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .noticeBox p{font-size:clamp(16px,2.6vw,20px);line-height:1.7;opacity:.92}
 .noticeSig{margin-top:10px;font-style:italic;font-weight:800;opacity:1!important;color:#7dffb3}
 #aiNote{position:fixed;left:10px;bottom:6px;z-index:6;max-width:min(62vw,520px);font-size:11px;line-height:1.35;opacity:.5;pointer-events:none}
+/* chart maker */
+#editor{justify-content:space-between;pointer-events:none;padding:10px 10px 24px}
+.edBar{pointer-events:auto;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:1100px}
+.edBar button,.edGroup{padding:7px 11px;border-radius:10px;background:rgba(12,14,34,.88);border:1px solid rgba(255,255,255,.18);font-size:13px;font-weight:800}
+.edBar b{color:#ffe066;margin-left:4px}
+.edBar .hot{background:linear-gradient(90deg,var(--c),var(--c2));color:#0a0d1f;border:none}
+.edGroup{display:flex;align-items:center;gap:6px;padding:3px 6px}
+.edGroup button{padding:4px 8px;background:rgba(255,255,255,.1);border:none}
+.edHelp{pointer-events:none;font-size:12px;opacity:.78;text-align:center;line-height:1.9;background:rgba(12,14,34,.78);padding:6px 14px;border-radius:12px;max-width:980px}
 #pauseBtn{position:fixed;top:12px;right:12px;z-index:4;width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);font-weight:900;display:none;font-family:'Outfit'}
 
 @media (max-width:720px){
@@ -166,6 +175,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
   <div class="pill">Press <kbd>Enter</kbd> or tap to start</div>
   <button class="pill pill2" data-act="lessons">📘 New here? Lessons <kbd>L</kbd></button>
   <button class="pill pill2" data-act="story" style="background:rgba(255,111,191,.12);border-color:rgba(255,111,191,.5)">📖 Story <kbd>S</kbd></button>
+  <button class="pill pill2" data-act="charts" style="background:rgba(77,217,255,.12);border-color:rgba(77,217,255,.5)">🛠️ Chart Maker <kbd>C</kbd></button>
   <div class="howto">
     <div>Play with <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> &nbsp; <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> &nbsp;or tap the lanes</div>
     <div class="legend"><span class="n tap"></span>Tap<span class="n hold"></span>Hold<span class="n flick"></span>Flick (swipe up on touch)<span class="n crit"></span>Critical</div>
@@ -174,7 +184,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 
 <div id="select" class="screen">
   <div class="selwrap">
-    <div class="head">SONG SELECT <button data-act="back">◀ Title</button><button data-act="lessons">📘 Lessons</button><button data-act="story">📖 Story</button></div>
+    <div class="head">SONG SELECT <button data-act="back">◀ Title</button><button data-act="lessons">📘 Lessons</button><button data-act="story">📖 Story</button><button data-act="charts">🛠️ Chart Maker</button></div>
     <div class="songlist" id="songList"></div>
     <div class="detail">
       <div class="dPortrait" id="dPortrait"></div>
@@ -225,6 +235,50 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 </div>
 
 <input type="file" id="fileIn" accept="audio/*" hidden>
+
+<div id="charts" class="screen">
+  <div class="selwrap">
+    <div class="head">CHART MAKER <button data-act="back">◀ Title</button><button data-act="start">Songs ▶</button></div>
+    <div class="songlist" id="chartList"></div>
+    <div class="detail" id="chartDetail"></div>
+  </div>
+  <div class="hints"><kbd>↑</kbd><kbd>↓</kbd> chart · <kbd>Enter</kbd> edit · <kbd>P</kbd> play · <kbd>C</kbd> copy link · <kbd>N</kbd> new · <kbd>O</kbd> open a link · <kbd>Del</kbd> delete</div>
+</div>
+
+<div id="editor" class="screen">
+  <div class="edBar">
+    <button data-act="edback">◀ Charts</button>
+    <button data-act="edrename" id="edName"></button>
+    <span class="edGroup"><button data-act="edsong-">◀</button><span id="edSong"></span><button data-act="edsong+">▶</button></span>
+    <button data-act="edsnap">Snap<b id="edSnap"></b></button>
+    <button data-act="edtype">Type<b id="edType"></b></button>
+    <button data-act="edwide">Width<b id="edWide"></b></button>
+    <button data-act="edcrit">Gold<b id="edCrit"></b></button>
+    <button data-act="edundo">↶ Undo</button>
+    <button data-act="edplay" id="edPlay" class="hot">▶ Play</button>
+    <button data-act="edtest" class="hot">🎮 Test</button>
+    <button data-act="edshare">🔗 Share</button>
+  </div>
+  <div class="edHelp">
+    <kbd>S</kbd><kbd>D</kbd><kbd>F</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd> place / remove note · <kbd>↑</kbd><kbd>↓</kbd> move · <kbd>PgUp</kbd><kbd>PgDn</kbd> jump a bar · <kbd>Del</kbd> delete ·
+    <kbd>1</kbd> tap <kbd>2</kbd> hold <kbd>3</kbd> flick · <kbd>W</kbd> width · <kbd>C</kbd> gold · <kbd>G</kbd> snap · <kbd>Z</kbd> undo · <kbd>N</kbd> rename · <kbd>,</kbd><kbd>.</kbd> song<br>
+    <b>Space</b> play the music — press keys while it plays to <b>record</b> (hold a key for a hold note) · <b>Enter</b> test from this bar (<kbd>Shift</kbd>+<kbd>Enter</kbd> from the start)<br>
+    <b>Holds:</b> pick Hold, press a key at the start, move up, press a key at the end (a different key = slide)
+  </div>
+</div>
+
+<div id="shared" class="screen">
+  <div class="panel">
+    <div class="rSub">🎮 SOMEONE SHARED A CHART WITH YOU</div>
+    <div class="rTitle" id="shName" style="font-size:26px;margin-top:8px"></div>
+    <div class="rSub" id="shInfo" style="margin-top:4px"></div>
+    <div class="btns" style="margin-top:20px">
+      <button class="btn primary" data-act="shplay">▶ Play <kbd>Enter</kbd></button>
+      <button class="btn" data-act="shcopy">✏️ Save a copy to edit <kbd>E</kbd></button>
+      <button class="btn" data-act="shclose">Go to the title screen <kbd>Esc</kbd></button>
+    </div>
+  </div>
+</div>
 
 <div id="pause" class="screen">
   <div class="panel">
@@ -1246,6 +1300,13 @@ function showLessonResults(){
 function backToMenu(){
   if (game) stopMusic();
   game = null;
+  if (lastChartCtx){
+    const from = lastChartCtx.from;
+    if (from === 'editor'){ showScreen('editor'); renderEdBar(); }
+    else if (from === 'list') showCharts();
+    else showShared();
+    return;
+  }
   if (lastLesson != null) showLessons(); else { showScreen('select'); renderSelect(); }
 }
 
@@ -1659,6 +1720,313 @@ IDB.all().then(recs => {
   if (screen === 'select') renderSelect();
 }).catch(() => {});
 
+/* ================= CHART MAKER ================= */
+const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const TYPE_CODES = { tap:0, hold:1, flick:2 }, TYPE_NAMES = ['tap', 'hold', 'flick'];
+const SNAPS = [4, 2, 1];   // grid in 16th-note steps: 1/4, 1/8, 1/16
+const ED = { charts: store.get('mycharts', []), sel: 0, cur: null, songIdx: 1, cursor: 16, lane: 2, snapI: 1, type: 'tap', wide: 1, crit: false,
+  pending: null, zoom: 14, playing: false, undo: [], rec: {}, drag: null, geo: null };
+let sharedChart = null, lastChartCtx = null;
+
+function saveCharts(){ store.set('mycharts', ED.charts); }
+function edSongs(){ return SONGS.map((_, i) => i).filter(i => !SONGS[i].custom); }
+function chartSongIdx(c){ const i = SONGS.findIndex(x => x.id === c.song && !x.custom); return i < 0 ? 1 : i; }
+function chartToNotes(c, g){
+  return c.notes.map(n => {
+    const o = { t: n.s * g.step, lane: n.lane, w: n.w || 1, type: n.type, end: n.type === 'hold' ? n.e * g.step : 0 };
+    if (n.type === 'hold') o.lane2 = n.l2 ?? n.lane;
+    if (n.c) o.crit = true;
+    return o;
+  }).sort((a, b) => a.t - b.t || a.lane - b.lane);
+}
+
+// ---- share links: the whole chart is packed into the URL ----
+const b64u = bytes => { let t = ''; for (const b of bytes) t += String.fromCharCode(b); return btoa(t).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const unb64u = str => { const t = atob(str.replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(t, ch => ch.charCodeAt(0)); };
+async function encodeChart(c){
+  const data = JSON.stringify({ v:1, s:c.song, n:c.name, x:c.notes.map(n => [n.s, n.lane, n.w || 1, TYPE_CODES[n.type], n.e || 0, n.l2 ?? n.lane, n.c ? 1 : 0]) });
+  const raw = new TextEncoder().encode(data);
+  if (window.CompressionStream){
+    try { const st = new Blob([raw]).stream().pipeThrough(new CompressionStream('deflate-raw')); return 'z' + b64u(new Uint8Array(await new Response(st).arrayBuffer())); } catch (e) {}
+  }
+  return 'j' + b64u(raw);
+}
+async function decodeChart(code){
+  let bytes = unb64u(code.slice(1));
+  if (code[0] === 'z'){ const st = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')); bytes = new Uint8Array(await new Response(st).arrayBuffer()); }
+  const d = JSON.parse(new TextDecoder().decode(bytes));
+  if (!d || d.v !== 1 || !Array.isArray(d.x)) throw new Error('bad chart');
+  return { id: 'c' + Date.now(), name: String(d.n || 'Shared chart').slice(0, 60), song: String(d.s),
+    notes: d.x.slice(0, 20000).map(a => {
+      const type = TYPE_NAMES[a[3]] || 'tap', w = clamp(a[2] | 0, 1, 3);
+      const n = { s: Math.max(0, a[0] | 0), lane: clamp(a[1] | 0, 0, 6 - w), w, type };
+      if (type === 'hold'){ n.e = Math.max(n.s + 1, a[4] | 0); n.l2 = clamp(a[5] | 0, 0, 6 - w); }
+      if (a[6]) n.c = 1;
+      return n;
+    }) };
+}
+async function shareChart(c){
+  if (!c) return;
+  if (!c.notes.length) return toast('Add some notes before sharing!');
+  const link = `${location.origin}${location.pathname}#chart=${await encodeChart(c)}`;
+  try { await navigator.clipboard.writeText(link); toast('🔗 Link copied! Send it to your friends'); }
+  catch (e) { prompt('Copy this link and send it to your friends:', link); }
+}
+function showShared(){
+  if (!sharedChart) return showScreen('title');
+  const i = SONGS.findIndex(x => x.id === sharedChart.song && !x.custom);
+  $('shName').textContent = sharedChart.name;
+  $('shInfo').textContent = (i < 0 ? 'Unknown song (it\'ll use Neon Skyline)' : `Music: ${SONGS[i].title} · ${SONGS[i].bpm} BPM`) + ` · ${sharedChart.notes.length} notes`;
+  showScreen('shared');
+}
+if (location.hash.startsWith('#chart=')){
+  decodeChart(location.hash.slice(7)).then(c => { sharedChart = c; if (screen === 'title') showShared(); }).catch(() => toast('That chart link looks broken 😢'));
+}
+
+// ---- chart list ----
+function showCharts(){ initAudio(); edStop(); showScreen('charts'); renderCharts(); }
+function renderCharts(){
+  const cs = ED.charts;
+  ED.sel = clamp(ED.sel, 0, Math.max(0, cs.length - 1));
+  $('chartList').innerHTML = `<button class="song addmusic" data-act="newchart">➕ New chart <kbd style="margin-left:6px">N</kbd></button>
+    <button class="song addmusic" data-act="importchart" style="border-color:rgba(77,217,255,.5);background:rgba(77,217,255,.08)">🔗 Open a share link <kbd style="margin-left:6px">O</kbd></button>` +
+    cs.map((c, i) => { const sg = SONGS[chartSongIdx(c)];
+      return `<button class="song ${i === ED.sel ? 'on' : ''}" data-chart="${i}" style="--sc:${sg.color};--sc2:${sg.color2}"><span class="jacket"></span><span class="st"><b>${esc(c.name)}</b><small>${esc(sg.title)} · ${c.notes.length} notes</small></span></button>`; }).join('');
+  const c = cs[ED.sel];
+  if (c){
+    const sg = SONGS[chartSongIdx(c)];
+    document.documentElement.style.setProperty('--c', sg.color); document.documentElement.style.setProperty('--c2', sg.color2);
+    $('chartDetail').innerHTML = `<div class="dTitle">${esc(c.name)}</div><div class="dArtist">Music: ${esc(sg.title)} · ${sg.bpm} BPM</div><div class="meta"><span>${c.notes.length} notes</span></div>
+      <div class="btns" style="margin-top:16px"><button class="btn primary" data-act="editchart">✏️ Edit <kbd>Enter</kbd></button><button class="btn" data-act="playchart">▶ Play <kbd>P</kbd></button>
+      <button class="btn" data-act="sharechart">🔗 Copy share link <kbd>C</kbd></button><button class="btn" data-act="delchart">🗑 Delete <kbd>Del</kbd></button></div>`;
+  } else {
+    $('chartDetail').innerHTML = `<div class="dTitle">Chart Maker</div><div class="udesc">Make your own level on any song in the game, then share it with a link. Anyone who opens the link can play your chart!<br><br>Press <kbd>N</kbd> to start a new chart.</div>`;
+  }
+  const on = document.querySelector('#chartList .song.on');
+  if (on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' });
+}
+function newChart(){
+  const si = SONGS[sel.song] && !SONGS[sel.song].custom ? sel.song : 1;
+  const c = { id: 'c' + Date.now(), name: 'My chart ' + (ED.charts.length + 1), song: SONGS[si].id, notes: [] };
+  ED.charts.unshift(c); saveCharts(); ED.sel = 0;
+  openEditor(c);
+}
+
+// ---- editor ----
+function openEditor(c){
+  edStop();
+  ED.cur = c; ED.songIdx = chartSongIdx(c); ED.cursor = 16; ED.lane = 2; ED.pending = null; ED.undo = [];
+  setLayout(6);
+  showScreen('editor'); renderEdBar();
+}
+function edGen(){ return getGen(ED.songIdx, 0); }
+function edSave(){ ED.cur.song = SONGS[ED.songIdx].id; saveCharts(); }
+function renderEdBar(){
+  if (!ED.cur) return;
+  const sg = SONGS[ED.songIdx];
+  document.documentElement.style.setProperty('--c', sg.color); document.documentElement.style.setProperty('--c2', sg.color2);
+  $('edName').textContent = '✏️ ' + ED.cur.name;
+  $('edSong').textContent = `${sg.title} · ${sg.bpm} BPM`;
+  $('edSnap').textContent = ['1/4', '1/8', '1/16'][ED.snapI];
+  $('edType').textContent = { tap:'Tap', hold:'Hold', flick:'Flick' }[ED.type];
+  $('edWide').textContent = ED.wide;
+  $('edCrit').textContent = ED.crit ? 'ON' : 'OFF';
+  $('edPlay').textContent = ED.playing ? '■ Stop' : '▶ Play';
+}
+function edSnapshot(){ ED.undo.push(JSON.stringify(ED.cur.notes)); if (ED.undo.length > 150) ED.undo.shift(); }
+function edUndo(){ if (!ED.undo.length) return toast('Nothing to undo'); ED.cur.notes = JSON.parse(ED.undo.pop()); edSave(); sfx('blip'); }
+function edNoteAt(st, lane){ return ED.cur.notes.findIndex(n => n.s === st && lane >= n.lane && lane < n.lane + (n.w || 1)); }
+function edPlace(lane, st){
+  const w = ED.wide;
+  if (ED.type === 'hold'){
+    if (!ED.pending){ ED.pending = { s: st, lane }; sfx('blip'); return; }
+    const p = ED.pending; ED.pending = null;
+    if (st <= p.s){ toast('Hold cancelled: the end has to be later than the start'); return; }
+    edSnapshot();
+    ED.cur.notes.push({ s: p.s, lane: clamp(p.lane, 0, LANES - w), w, type: 'hold', e: st, l2: clamp(lane, 0, LANES - w) });
+    sfx('tap'); edSave(); return;
+  }
+  const at = edNoteAt(st, lane);
+  edSnapshot();
+  if (at >= 0){ ED.cur.notes.splice(at, 1); sfx('blip'); edSave(); return; }   // pressing on a note removes it
+  const n = { s: st, lane: clamp(lane, 0, LANES - w), w, type: ED.type };
+  if (ED.crit) n.c = 1;
+  ED.cur.notes.push(n);
+  sfx(ED.type === 'flick' ? 'flick' : ED.crit ? 'crit' : 'tap');
+  edSave();
+}
+function edDelete(){ const i = edNoteAt(ED.cursor, ED.lane); if (i < 0) return toast('No note here (put the yellow box on a note\'s start)'); edSnapshot(); ED.cur.notes.splice(i, 1); edSave(); sfx('blip'); }
+
+// playback + recording
+function edNow(){ const lat = AC.outputLatency || AC.baseLatency || 0; return AC.currentTime - lat - ED.t0 - settings.offset / 1000; }
+function edPlay(){
+  initAudio(); AC.resume();
+  if (ED.playing) return edStop();
+  ED.pending = null;
+  const g = edGen(), start = ED.cursor * g.step;
+  ED.bus = AC.createGain(); ED.bus.connect(master);
+  ED.t0 = AC.currentTime + 0.15 - start; ED.aIdx = 0;
+  while (ED.aIdx < g.audio.length && g.audio[ED.aIdx].t < start - 0.01) ED.aIdx++;
+  ED.lastTick = start - 0.001; ED.playing = true; ED.rec = {};
+  renderEdBar();
+}
+function edStop(){
+  if (!ED.playing) return;
+  ED.playing = false;
+  try { ED.bus.disconnect(); } catch (e) {}
+  const g = edGen(), sn = SNAPS[ED.snapI];
+  ED.cursor = Math.max(0, Math.round(Math.max(0, edNow()) / g.step / sn) * sn);
+  ED.rec = {};
+  renderEdBar();
+}
+function edUpdate(){
+  if (!ED.playing) return;
+  const g = edGen(), horizon = AC.currentTime + 0.25, keep = OUT;
+  OUT = ED.bus;
+  while (ED.aIdx < g.audio.length){
+    const e = g.audio[ED.aIdx], at = ED.t0 + e.t;
+    if (at > horizon) break;
+    if (at >= AC.currentTime - 0.05) playEvent(e, Math.max(at, AC.currentTime));
+    ED.aIdx++;
+  }
+  OUT = keep;
+  const now = edNow();
+  for (const n of ED.cur.notes){ const t = n.s * g.step; if (t > ED.lastTick && t <= now){ sfx(n.type === 'flick' ? 'flick' : n.c ? 'crit' : 'tap'); break; } }
+  ED.lastTick = Math.max(ED.lastTick, now);
+  if (now > g.duration) edStop();
+}
+function edRecDown(lane){ ED.rec[lane] = edNow(); sfx('tap'); }
+function edRecUp(lane){
+  const st0 = ED.rec[lane]; if (st0 == null) return;
+  delete ED.rec[lane];
+  const g = edGen(), sn = SNAPS[ED.snapI];
+  const st = Math.max(0, Math.round(st0 / g.step / sn) * sn), en = Math.round(edNow() / g.step / sn) * sn;
+  const w = Math.min(ED.wide, LANES - lane), l = clamp(lane, 0, LANES - w);
+  if (edNoteAt(st, l) >= 0) return;
+  edSnapshot();
+  const long = edNow() - st0 > 0.3 && en > st;
+  const n = long ? { s: st, lane: l, w, type: 'hold', e: en, l2: l } : { s: st, lane: l, w, type: ED.type === 'hold' ? 'tap' : ED.type };
+  if (!long && ED.crit) n.c = 1;
+  ED.cur.notes.push(n);
+  edSave();
+}
+
+// drawing the editor grid (time goes up, like falling notes)
+function edPill(x, y, w, col, a){
+  cx.globalAlpha = a;
+  const gr = cx.createLinearGradient(0, y - 7, 0, y + 7); gr.addColorStop(0, col[0]); gr.addColorStop(1, col[2]);
+  cx.fillStyle = gr; rr(x + 3, y - 7, w - 6, 14, 5); cx.fill();
+  cx.strokeStyle = '#fff'; cx.lineWidth = 1.5; cx.stroke();
+  cx.globalAlpha = 1;
+}
+function drawEditor(){
+  const g = edGen(), sn = SNAPS[ED.snapI], px = ED.zoom, sg = SONGS[ED.songIdx];
+  const colW = Math.min(W * 0.13, 72), gw = colW * LANES, x0 = (W - gw) / 2, yP = H * 0.62;
+  const cur = ED.playing ? Math.max(0, edNow()) / g.step : ED.cursor;
+  ED.geo = { colW, x0, yP, px, cur };
+  const yOf = st => yP - (st - cur) * px;
+  cx.fillStyle = 'rgba(10,12,30,.84)'; cx.fillRect(x0, 0, gw, H);
+  const lo = Math.max(0, Math.floor(cur - (H - yP) / px) - 1), hi = Math.ceil(cur + yP / px) + 1;
+  cx.font = '700 11px Outfit, sans-serif'; cx.textAlign = 'right'; cx.textBaseline = 'middle';
+  for (let st = lo; st <= hi; st++){
+    if (st % sn && st % 4) continue;
+    const y = yOf(st), bar = st % 16 === 0, beatL = st % 4 === 0;
+    cx.fillStyle = bar ? 'rgba(255,255,255,.45)' : beatL ? 'rgba(255,255,255,.18)' : 'rgba(255,255,255,.07)';
+    cx.fillRect(x0, y, gw, bar ? 2 : 1);
+    if (bar){ cx.fillStyle = 'rgba(255,255,255,.6)'; cx.fillText(st / 16 + 1, x0 - 8, y); }
+  }
+  const endStep = g.duration / g.step;
+  if (endStep >= lo && endStep <= hi){ const y = yOf(endStep); cx.fillStyle = '#ff4d6d'; cx.fillRect(x0, y, gw, 3); cx.textAlign = 'left'; cx.fillText('END', x0 + gw + 8, y); }
+  for (let l = 0; l <= LANES; l++){
+    const edge = l === 0 || l === LANES;
+    cx.fillStyle = edge ? hexA(sg.color, .75) : 'rgba(255,255,255,.12)';
+    cx.fillRect(x0 + l * colW - (edge ? 1 : 0), 0, edge ? 2 : 1, H);
+  }
+  for (const n of ED.cur.notes){
+    if (n.type !== 'hold') continue;
+    const w = n.w || 1, l2 = n.l2 ?? n.lane, ya = yOf(n.s), yb = yOf(n.e);
+    if (Math.max(ya, yb) < -20 || Math.min(ya, yb) > H + 20) continue;
+    cx.beginPath();
+    cx.moveTo(x0 + (n.lane + .15) * colW, ya); cx.lineTo(x0 + (n.lane + w - .15) * colW, ya);
+    cx.lineTo(x0 + (l2 + w - .15) * colW, yb); cx.lineTo(x0 + (l2 + .15) * colW, yb); cx.closePath();
+    cx.fillStyle = 'rgba(90,255,170,.35)'; cx.fill(); cx.strokeStyle = 'rgba(200,255,225,.8)'; cx.lineWidth = 1.5; cx.stroke();
+    edPill(x0 + l2 * colW, yb, w * colW, NOTE_COL.hold, 0.6);
+  }
+  for (const n of ED.cur.notes){
+    const y = yOf(n.s); if (y < -20 || y > H + 20) continue;
+    const w = n.w || 1;
+    edPill(x0 + n.lane * colW, y, w * colW, n.c ? NOTE_COL.crit : NOTE_COL[n.type], 1);
+    if (n.type === 'flick'){ const xm = x0 + (n.lane + w / 2) * colW; cx.beginPath(); cx.moveTo(xm, y - 18); cx.lineTo(xm + 9, y - 8); cx.lineTo(xm - 9, y - 8); cx.closePath(); cx.fillStyle = '#fff'; cx.fill(); }
+  }
+  if (ED.pending){
+    const y = yOf(ED.pending.s);
+    cx.setLineDash([5, 4]); cx.strokeStyle = NOTE_COL.hold[1]; cx.lineWidth = 2;
+    cx.strokeRect(x0 + ED.pending.lane * colW + 3, y - 8, colW * ED.wide - 6, 16); cx.setLineDash([]);
+  }
+  cx.fillStyle = ED.playing ? '#ff5aa8' : '#ffffff'; cx.fillRect(x0 - 12, yP - 1, gw + 24, 2);
+  if (!ED.playing){ cx.strokeStyle = '#ffe066'; cx.lineWidth = 2.5; cx.strokeRect(x0 + ED.lane * colW + 2, yP - 10, colW * Math.min(ED.wide, LANES - ED.lane) - 4, 20); }
+  for (let l = 0; l < LANES; l++){
+    cx.fillStyle = 'rgba(255,255,255,.55)'; cx.font = '800 12px Outfit, sans-serif'; cx.textAlign = 'center';
+    cx.fillText(KEY_LABELS[l], x0 + (l + .5) * colW, yP + 22);
+  }
+  const tSec = cur * g.step;
+  cx.textAlign = 'center'; cx.font = '800 13px Outfit, sans-serif'; cx.fillStyle = ED.playing ? '#ff9de0' : '#fff';
+  cx.fillText(`${Math.floor(tSec / 60)}:${(tSec % 60).toFixed(1).padStart(4, '0')} · bar ${Math.floor(cur / 16) + 1} · beat ${Math.floor((cur % 16) / 4) + 1} · ${ED.cur.notes.length} notes${ED.playing ? ' · ● RECORDING: press S D F J K L' : ''}`, L.cx, yP + 44);
+}
+function edPointerDown(e){ if (ED.geo) ED.drag = { y: e.clientY, cur: ED.cursor, moved: false }; }
+function edPointerMove(e){
+  const d = ED.drag; if (!d || ED.playing) return;
+  const dy = e.clientY - d.y;
+  if (Math.abs(dy) > 8) d.moved = true;
+  if (d.moved){ const sn = SNAPS[ED.snapI]; ED.cursor = Math.max(0, Math.round((d.cur + dy / ED.geo.px) / sn) * sn); }
+}
+function edPointerUp(e){
+  const d = ED.drag; ED.drag = null;
+  if (!d || d.moved || ED.playing || !ED.geo) return;
+  const G2 = ED.geo, lane = Math.floor((e.clientX - G2.x0) / G2.colW);
+  if (lane < 0 || lane >= LANES) return;
+  const sn = SNAPS[ED.snapI], st = Math.max(0, Math.round((G2.cur + (G2.yP - e.clientY) / G2.px) / sn) * sn);
+  ED.cursor = st; ED.lane = lane;
+  edPlace(lane, st);
+}
+cv.addEventListener('wheel', e => {
+  if (screen !== 'editor' || ED.playing) return;
+  e.preventDefault();
+  const sn = SNAPS[ED.snapI];
+  ED.cursor = Math.max(0, ED.cursor - Math.sign(e.deltaY) * sn);
+}, { passive: false });
+function edKey(k, e){
+  const sn = SNAPS[ED.snapI], moving = ['arrowup', 'arrowdown', 'pageup', 'pagedown', 'home', 'end'].includes(k);
+  if (moving && ED.playing) return;
+  switch (k){
+    case 'arrowup': ED.cursor += sn; break;
+    case 'arrowdown': ED.cursor = Math.max(0, ED.cursor - sn); break;
+    case 'pageup': ED.cursor += 16; break;
+    case 'pagedown': ED.cursor = Math.max(0, ED.cursor - 16); break;
+    case 'home': ED.cursor = 0; break;
+    case 'end': ED.cursor = ED.cur.notes.reduce((m, n) => Math.max(m, n.e || n.s), 0); break;
+    case 'arrowleft': ED.lane = Math.max(0, ED.lane - 1); break;
+    case 'arrowright': ED.lane = Math.min(LANES - 1, ED.lane + 1); break;
+    case 'backspace': case 'delete': edDelete(); break;
+    case '1': ED.type = 'tap'; ED.pending = null; break;
+    case '2': ED.type = 'hold'; break;
+    case '3': ED.type = 'flick'; ED.pending = null; break;
+    case 'w': ED.wide = ED.wide % 3 + 1; break;
+    case 'c': ED.crit = !ED.crit; break;
+    case 'g': ED.snapI = (ED.snapI + 1) % SNAPS.length; ED.cursor = Math.round(ED.cursor / SNAPS[ED.snapI]) * SNAPS[ED.snapI]; break;
+    case 'z': edUndo(); break;
+    case 'n': act('edrename'); break;
+    case '=': case '+': ED.zoom = Math.min(40, ED.zoom + 2); break;
+    case '-': case '_': ED.zoom = Math.max(6, ED.zoom - 2); break;
+    case ' ': edPlay(); break;
+    case 'enter': act(e.shiftKey ? 'edtestall' : 'edtest'); return;
+    case 'escape': if (ED.pending){ ED.pending = null; break; } act('edback'); return;
+    case ',': act('edsong-'); return;
+    case '.': act('edsong+'); return;
+  }
+  renderEdBar();
+}
+
 /* ================= GAME STATE ================= */
 let screen = 'notice';
 const sel = { song: 0, diff: 0 };
@@ -1671,11 +2039,12 @@ function songNow(){
   return AC.currentTime - lat - game.t0 - settings.offset / 1000;
 }
 
-function startGame(lessonIdx){
+function startGame(lessonIdx, opts){
   if (lessonIdx === undefined) lessonIdx = null;
   lastLesson = lessonIdx;
+  lastChartCtx = opts && opts.chart ? opts : null;
   initAudio();
-  if (lessonIdx == null && SONGS[sel.song].custom && !SONGS[sel.song].buffer){
+  if (!lastChartCtx && lessonIdx == null && SONGS[sel.song].custom && !SONGS[sel.song].buffer){
     const sg = SONGS[sel.song];
     toast('🎧 Loading your song…');
     loadCustomBuffer(sg).then(() => startGame(null)).catch(() => toast('Couldn\'t load that song file'));
@@ -1684,7 +2053,13 @@ function startGame(lessonIdx){
   if (game) stopMusic();
   AC.resume();
   let g, src, song, diff = sel.diff, label, labelColor, hint = '', lesson = null;
-  if (lessonIdx != null){
+  if (lastChartCtx){
+    const ci = chartSongIdx(lastChartCtx.chart);
+    diff = -1; g = getGen(ci, 0); song = SONGS[ci];
+    src = chartToNotes(lastChartCtx.chart, g);
+    if (lastChartCtx.startAt) src = src.filter(n => n.t >= lastChartCtx.startAt - 0.01);
+    label = lastChartCtx.from === 'editor' ? 'TEST PLAY' : 'CUSTOM CHART'; labelColor = '#7dffb3';
+  } else if (lessonIdx != null){
     lesson = LESSONS[lessonIdx];
     if (lesson.song != null){ diff = lesson.diff; g = getGen(lesson.song, diff); src = getChart(lesson.song, diff); song = SONGS[lesson.song]; }
     else { g = makeLessonGen(lessonIdx); src = g.notes; song = g.song; diff = -1; }
@@ -1693,7 +2068,7 @@ function startGame(lessonIdx){
     g = getGen(sel.song, sel.diff); src = getChart(sel.song, sel.diff); song = SONGS[sel.song];
     label = DIFFS[diff].name; labelColor = DIFFS[diff].color;
   }
-  const crossMode = lessonIdx == null && !!song.cross;
+  const crossMode = lessonIdx == null && !lastChartCtx && !!song.cross;
   setLayout(6);
   const notes = src.map((n, i) => ({ ...n, state: 0, id: i }));
   const events = src.events || [];
@@ -1701,7 +2076,7 @@ function startGame(lessonIdx){
   const bus = AC.createGain(); bus.connect(master); OUT = bus;
   game = {
     song, diff, gen: g, notes, total, bus, lesson: lessonIdx, label, labelColor, hint,
-    noFail: diff === 0 || lessonIdx != null,
+    noFail: diff === 0 || lessonIdx != null || !!(lastChartCtx && lastChartCtx.from === 'editor'), chartCtx: lastChartCtx,
     t0: AC.currentTime + LEADIN, audioIdx: 0, first: 0, win: (diff === 0 || (lesson && lesson.easy)) ? BEGINNER_WIN : WIN,
     score: 0, combo: 0, maxCombo: 0, life: 1000, counts: [0,0,0,0,0],
     fx: [], parts: [], lastJudge: null, laneFlash: new Array(LANES).fill(0),
@@ -1709,6 +2084,7 @@ function startGame(lessonIdx){
     beatPulse: 0, comboPulse: 0, touch: false,
     events, speedSegs: events.filter(e => e.kind === 'speed'), roads: crossMode ? song.roads : 1,
   };
+  if (lastChartCtx && lastChartCtx.startAt) game.t0 -= lastChartCtx.startAt;
   if (song.custom && song.buffer){
     const srcNode = AC.createBufferSource(); srcNode.buffer = song.buffer; srcNode.connect(bus);
     srcNode.start(game.t0); game.srcNode = srcNode;
@@ -1721,7 +2097,7 @@ function stopMusic(){
   if (game && game.bus){ try { game.bus.disconnect(); } catch(e){} }
   if (AC && AC.state === 'suspended') AC.resume();
 }
-function retry(){ startGame(lastLesson); }
+function retry(){ startGame(lastLesson, lastChartCtx); }
 function quit(){ backToMenu(); }
 function pauseGame(){
   if (!game || game.paused || game.ended) return;
@@ -2322,6 +2698,24 @@ function showScreen(id){
   if (screen !== 'game' && screen !== 'pause') tryReload();
 }
 
+function showChartResults(){
+  const G = game, sc = Math.round(G.score), ctx = G.chartCtx;
+  const rank = G.failed ? 'F' : sc >= 900000 ? 'S' : sc >= 800000 ? 'A' : sc >= 650000 ? 'B' : sc >= 500000 ? 'C' : 'D';
+  const fc = !G.failed && G.counts[2] + G.counts[3] + G.counts[4] === 0, ap = fc && G.counts[1] === 0;
+  $('rTitle').textContent = ctx.chart.name;
+  $('rSub').textContent = (ctx.from === 'editor' ? 'TEST PLAY · ' : 'CUSTOM CHART · ') + G.song.title + (G.auto ? ' · AUTO' : '');
+  $('rRank').textContent = rank;
+  const b = $('rBadge'); b.textContent = G.failed ? 'LIVE FAILED' : ap ? 'ALL PERFECT' : fc ? 'FULL COMBO' : 'CLEAR';
+  b.className = 'rBadge' + (ap ? ' ap' : fc ? ' fc' : G.failed ? ' fail' : '');
+  $('rScore').textContent = sc.toLocaleString();
+  $('rBest').textContent = ''; $('rBest').className = 'rBest';
+  $('rCounts').innerHTML = JUDGE_NAMES.map((n, k) => `<div><span style="color:${JUDGE_COLORS[k]}">${n}</span><b>${G.counts[k]}</b></div>`).join('') + `<div><span>MAX COMBO</span><b>${G.maxCombo}</b></div>`;
+  $('rPrimary').dataset.act = 'menu'; $('rPrimary').innerHTML = (ctx.from === 'editor' ? 'Back to editor' : 'Back') + ' <kbd>Enter</kbd>';
+  $('rSecondary').dataset.act = 'retry'; $('rSecondary').innerHTML = 'Retry <kbd>R</kbd>';
+  game = null;
+  showScreen('result');
+}
+
 /* ================= AUTO UPDATE =================
    Every 30s, re-download this page. If it changed (a new version was deployed), reload —
    but never in the middle of a song: wait until you're back in a menu. */
@@ -2329,7 +2723,7 @@ let updatePending = false, updateBase = null;
 function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 3500); }
 function tryReload(){
   if (!updatePending) return;
-  if (screen === 'game' || screen === 'pause'){ toast('✨ Update ready — it\'ll load after this song'); return; }
+  if (screen === 'game' || screen === 'pause' || screen === 'editor'){ toast('✨ Update ready — it\'ll load when you\'re back in a menu'); return; }
   toast('✨ New version — updating…');
   setTimeout(() => location.reload(), 900);
 }
@@ -2378,6 +2772,7 @@ function renderSelect(){
 function showResults(){
   const G = game;
   if (G.lesson != null) return showLessonResults();
+  if (G.chartCtx) return showChartResults();
   $('rPrimary').dataset.act = 'select'; $('rPrimary').innerHTML = 'Song select <kbd>Enter</kbd>';
   $('rSecondary').dataset.act = 'retry'; $('rSecondary').innerHTML = 'Retry <kbd>R</kbd>';
   const sc = Math.round(G.score);
@@ -2427,7 +2822,46 @@ function act(a){
     case 'lesson-start': if (lsel < lessonsUnlocked()) startGame(lsel); break;
     case 'next': lsel = Math.min(LESSONS.length - 1, lastLesson + 1); startGame(lsel); break;
     case 'menu': backToMenu(); break;
-    case 'noticeok': showScreen('title'); sfx('blip'); break;
+    case 'noticeok': sharedChart ? showShared() : showScreen('title'); sfx('blip'); break;
+    case 'charts': showCharts(); break;
+    case 'newchart': newChart(); break;
+    case 'importchart': {
+      const link = prompt('Paste a chart link:');
+      if (!link) break;
+      const m = link.match(/#chart=([A-Za-z0-9_-]+)/);
+      if (!m){ toast('That doesn\'t look like a chart link'); break; }
+      decodeChart(m[1]).then(c => { sharedChart = c; showShared(); }).catch(() => toast('That chart link looks broken 😢'));
+      break;
+    }
+    case 'editchart': if (ED.charts[ED.sel]) openEditor(ED.charts[ED.sel]); break;
+    case 'playchart': if (ED.charts[ED.sel]){ if (!ED.charts[ED.sel].notes.length){ toast('This chart has no notes yet'); break; } startGame(null, { chart: ED.charts[ED.sel], from: 'list' }); } break;
+    case 'sharechart': shareChart(ED.charts[ED.sel]); break;
+    case 'delchart': if (ED.charts[ED.sel] && confirm(`Delete "${ED.charts[ED.sel].name}"?`)){ ED.charts.splice(ED.sel, 1); saveCharts(); renderCharts(); } break;
+    case 'edback': edStop(); edSave(); showCharts(); break;
+    case 'edrename': { const v = prompt('Chart name:', ED.cur.name); if (v){ ED.cur.name = v.slice(0, 60); edSave(); renderEdBar(); } break; }
+    case 'edsong-': case 'edsong+': {
+      const list = edSongs(); let pos = list.indexOf(ED.songIdx);
+      pos = (pos + (a === 'edsong+' ? 1 : -1) + list.length) % list.length;
+      edStop(); ED.songIdx = list[pos]; edSave(); renderEdBar(); sfx('blip');
+      break;
+    }
+    case 'edsnap': ED.snapI = (ED.snapI + 1) % SNAPS.length; renderEdBar(); break;
+    case 'edtype': ED.type = { tap:'hold', hold:'flick', flick:'tap' }[ED.type]; ED.pending = null; renderEdBar(); break;
+    case 'edwide': ED.wide = ED.wide % 3 + 1; renderEdBar(); break;
+    case 'edcrit': ED.crit = !ED.crit; renderEdBar(); break;
+    case 'edundo': edUndo(); break;
+    case 'edplay': edPlay(); break;
+    case 'edtest': case 'edtestall': {
+      edStop(); edSave();
+      if (!ED.cur.notes.length){ toast('Add some notes first!'); break; }
+      const g = edGen(), sa = a === 'edtestall' ? 0 : Math.floor(ED.cursor / 16) * 16 * g.step;
+      startGame(null, { chart: ED.cur, from: 'editor', startAt: sa });
+      break;
+    }
+    case 'edshare': edSave(); shareChart(ED.cur); break;
+    case 'shplay': if (sharedChart) startGame(null, { chart: sharedChart, from: 'shared' }); break;
+    case 'shcopy': if (sharedChart){ const c = { ...sharedChart, id: 'c' + Date.now(), notes: sharedChart.notes.map(n => ({ ...n })) }; ED.charts.unshift(c); saveCharts(); ED.sel = 0; openEditor(c); toast('Saved a copy to your charts'); } break;
+    case 'shclose': sharedChart = null; history.replaceState(null, '', location.pathname); showScreen('title'); break;
     case 'story': showStory(); break;
     case 'vnnext': vnNext(); break;
     case 'addmusic': $('fileIn').click(); break;
@@ -2446,7 +2880,7 @@ function act(a){
 
 /* ================= INPUT ================= */
 document.addEventListener('click', e => {
-  const b = e.target.closest('[data-act],[data-song],[data-diff],[data-lesson],[data-unit],[data-chapter]');
+  const b = e.target.closest('[data-act],[data-song],[data-diff],[data-lesson],[data-unit],[data-chapter],[data-chart]');
   if (!b) return;
   initAudio();
   if (b.blur) b.blur();
@@ -2455,6 +2889,7 @@ document.addEventListener('click', e => {
   else if (b.dataset.lesson != null){ lsel = +b.dataset.lesson; renderLessons(); sfx('blip'); }
   else if (b.dataset.unit != null){ storySel.unit = +b.dataset.unit; storySel.ch = 0; renderStory(); sfx('blip'); }
   else if (b.dataset.chapter != null){ storySel.ch = +b.dataset.chapter; openChapter(storySel.unit, storySel.ch); }
+  else if (b.dataset.chart != null){ ED.sel = +b.dataset.chart; renderCharts(); sfx('blip'); }
   else act(b.dataset.act);
 });
 
@@ -2471,9 +2906,35 @@ addEventListener('keydown', e => {
     if (k === 'escape' || k === 'p') pauseGame();
     return;
   }
+  if (screen === 'editor' && ED.cur){
+    e.preventDefault();
+    const l = KEYS.indexOf(k);
+    if (l >= 0 && !e.ctrlKey && !e.metaKey){
+      if (e.repeat) return;
+      if (ED.playing) edRecDown(l); else { ED.lane = l; edPlace(l, ED.cursor); }
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && k === 'z'){ edUndo(); return; }
+    edKey(k, e);
+    return;
+  }
   if (e.repeat && (k === 'enter' || k === ' ')) return;
   if (screen === 'notice'){ if (k === 'enter' || k === ' ' || k === 'escape') act('noticeok'); }
-  else if (screen === 'title'){ if (k === 'enter' || k === ' ') goSelect(); else if (k === 'l') showLessons(); else if (k === 's') showStory(); }
+  else if (screen === 'title'){ if (k === 'enter' || k === ' ') goSelect(); else if (k === 'l') showLessons(); else if (k === 's') showStory(); else if (k === 'c') showCharts(); }
+  else if (screen === 'charts'){
+    switch (k){
+      case 'arrowup': ED.sel = Math.max(0, ED.sel - 1); renderCharts(); sfx('blip'); break;
+      case 'arrowdown': ED.sel = Math.min(ED.charts.length - 1, ED.sel + 1); renderCharts(); sfx('blip'); break;
+      case 'enter': case ' ': act('editchart'); break;
+      case 'p': act('playchart'); break;
+      case 'c': act('sharechart'); break;
+      case 'n': act('newchart'); break;
+      case 'o': act('importchart'); break;
+      case 'delete': case 'backspace': act('delchart'); break;
+      case 'escape': showScreen('title'); break;
+    }
+  }
+  else if (screen === 'shared'){ if (k === 'enter' || k === ' ') act('shplay'); else if (k === 'e') act('shcopy'); else if (k === 'escape') act('shclose'); }
   else if (screen === 'story'){
     const u = UNITS[storySel.unit];
     switch (k){
@@ -2527,6 +2988,7 @@ addEventListener('keydown', e => {
   }
 });
 addEventListener('keyup', e => {
+  if (screen === 'editor' && ED.playing){ const el = KEYS.indexOf(e.key.toLowerCase()); if (el >= 0) edRecUp(el); }
   const l = laneOfKey(e.key.toLowerCase());
   if (l >= 0) down.delete('k' + l);
   if (e.key === ' ') e.preventDefault();
@@ -2538,6 +3000,7 @@ function laneFromPoint(x, y){
   return clamp(Math.floor((x - left) / (L.hw * s / LANES)), 0, LANES - 1);
 }
 cv.addEventListener('pointerdown', e => {
+  if (screen === 'editor'){ edPointerDown(e); return; }
   if (!game || game.paused || game.ended || screen !== 'game') return;
   e.preventDefault();
   if (e.pointerType !== 'mouse') game.touch = true;
@@ -2548,6 +3011,7 @@ cv.addEventListener('pointerdown', e => {
   pressLane(lane, src);
 });
 cv.addEventListener('pointermove', e => {
+  if (screen === 'editor'){ edPointerMove(e); return; }
   const p = ptrs.get(e.pointerId);
   if (!p || !game) return;
   p.lane = laneFromPoint(e.clientX, e.clientY);
@@ -2558,6 +3022,7 @@ cv.addEventListener('pointermove', e => {
   }
 });
 function ptrEnd(e){
+  if (screen === 'editor'){ if (e.type === 'pointerup') edPointerUp(e); else ED.drag = null; return; }
   const src = 'p' + e.pointerId;
   down.delete(src); ptrs.delete(e.pointerId);
   if (!game) return;
@@ -2573,8 +3038,10 @@ let lastTs = performance.now();
 function loop(ts){
   const dt = Math.min(0.05, (ts - lastTs) / 1000); lastTs = ts;
   if (game && !game.paused && !game.ended) update();
-  drawBg(game ? game.song : SONGS[sel.song], ts / 1000, dt);
+  const inEditor = !game && screen === 'editor' && ED.cur;
+  drawBg(game ? game.song : inEditor ? SONGS[ED.songIdx] : SONGS[sel.song], ts / 1000, dt);
   if (game) drawGame(game.paused ? 0 : dt);
+  else if (inEditor){ edUpdate(); drawEditor(); }
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
