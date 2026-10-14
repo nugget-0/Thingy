@@ -313,6 +313,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
   <div class="panel">
     <h2>SETTINGS</h2>
     <div class="setRow"><span>Note speed</span><button data-act="spd-">◀</button><b id="sSpeed"></b><button data-act="spd+">▶</button></div>
+    <div class="setRow"><span>Rainbow notes</span><button data-act="rainbow">◀</button><b id="sRainbow"></b><button data-act="rainbow">▶</button></div>
     <div class="setRow"><span>Audio offset</span><button data-act="off-">◀</button><b id="sOffset"></b><button data-act="off+">▶</button></div>
     <div style="text-align:left;margin-top:18px;font-weight:900;letter-spacing:.1em;font-size:13px;opacity:.8">REDEEM CODE</div>
     <div class="redeem"><input id="codeIn" type="text" placeholder="Enter a code…" autocomplete="off" autocapitalize="off" spellcheck="false"><button data-act="redeem">Redeem</button></div>
@@ -439,7 +440,7 @@ const store = {
   get(k, d){ try{ const v = localStorage.getItem('prism_'+k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem('prism_'+k, JSON.stringify(v)); }catch(e){} }
 };
-const settings = { speed: store.get('speed', 6), offset: store.get('offset', 0), auto: false };
+const settings = { speed: store.get('speed', 6), offset: store.get('offset', 0), auto: false, rainbow: store.get('rainbow', true) };
 
 function rng(seed){
   let a = seed >>> 0;
@@ -2103,7 +2104,6 @@ const MODS = [
   { id:'random',    name:'Random Lanes',        desc:'Shuffles lanes (from next song)' },
   { id:'hidden',    name:'Always Hidden',       desc:'Notes vanish before the line' },
   { id:'sudden',    name:'Always Sudden',       desc:'Notes appear late' },
-  { id:'rainbow',   name:'Rainbow Notes',       desc:'' },
   { id:'big',       name:'Big Notes',           desc:'Thicker notes' },
   { id:'drunk',     name:'Drunk Highway',       desc:'The lanes wobble' },
   { id:'hidehud',   name:'Hide HUD',            desc:'No score / combo / life' },
@@ -2230,6 +2230,7 @@ function xKey(e, k){
 }
 function renderSettings(){
   $('sSpeed').textContent = settings.speed;
+  $('sRainbow').textContent = settings.rainbow ? 'ON' : 'OFF';
   $('sOffset').textContent = (settings.offset > 0 ? '+' : '') + settings.offset + ' ms';
   if (XP.unlocked && !$('redeemMsg').textContent) $('redeemMsg').innerHTML = '<span style="color:#7dffb3">✅ Special panel unlocked: press <kbd>`</kbd> (or <kbd>~</kbd>) to open it</span>';
 }
@@ -2485,7 +2486,7 @@ function noteAlpha(G, d, now){
 
 /* ================= EFFECTS ================= */
 function noteColor(n){
-  if (xon('rainbow')){ const h = (performance.now() / 8 + n.t * 180 + n.lane * 40) % 360; return [hslHex(h, 100, 88), hslHex(h, 95, 62), hslHex(h, 90, 42)]; }
+  if (settings.rainbow){ const h = (performance.now() / 8 + n.t * 180 + n.lane * 40) % 360; return [hslHex(h, 100, 88), hslHex(h, 95, 62), hslHex(h, 90, 42)]; }
   return n.crit ? NOTE_COL.crit : NOTE_COL[n.type];
 }
 function spawnHit(n, j, tail){
@@ -3213,6 +3214,7 @@ function act(a){
     case 'charts': showCharts(); break;
     case 'settings': initAudio(); showScreen('settings'); renderSettings(); setTimeout(() => $('codeIn').focus(), 50); break;
     case 'redeem': redeem(); break;
+    case 'rainbow': settings.rainbow = !settings.rainbow; store.set('rainbow', settings.rainbow); sfx('blip'); break;
     case 'newchart': newChart(); break;
     case 'importchart': {
       const link = prompt('Paste a chart link:');
@@ -3319,7 +3321,7 @@ addEventListener('keydown', e => {
   if (e.repeat && (k === 'enter' || k === ' ')) return;
   if (screen === 'notice'){ if (k === 'enter' || k === ' ' || k === 'escape') act('noticeok'); }
   else if (screen === 'title'){ if (k === 'enter' || k === ' ') goSelect(); else if (k === 'l') showLessons(); else if (k === 's') showStory(); else if (k === 'c') showCharts(); else if (k === 'o') act('settings'); }
-  else if (screen === 'settings'){ if (k === 'escape') showScreen('title'); else if (k === 'arrowleft') act('spd-'); else if (k === 'arrowright') act('spd+'); else if (k === '[') act('off-'); else if (k === ']') act('off+'); }
+  else if (screen === 'settings'){ if (k === 'escape') showScreen('title'); else if (k === 'arrowleft') act('spd-'); else if (k === 'arrowright') act('spd+'); else if (k === '[') act('off-'); else if (k === ']') act('off+'); else if (k === 'r') act('rainbow'); }
   else if (screen === 'charts'){
     switch (k){
       case 'arrowup': ED.sel = Math.max(0, ED.sel - 1); renderCharts(); sfx('blip'); break;
