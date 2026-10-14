@@ -144,6 +144,31 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 .edGroup{display:flex;align-items:center;gap:6px;padding:3px 6px}
 .edGroup button{padding:4px 8px;background:rgba(255,255,255,.1);border:none}
 .edHelp{pointer-events:none;font-size:12px;opacity:.78;text-align:center;line-height:1.9;background:rgba(12,14,34,.78);padding:6px 14px;border-radius:12px;max-width:980px}
+/* settings + special panel */
+.setRow{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:15px;text-align:left}
+.setRow span{flex:1}
+.setRow button{width:38px;height:36px;border-radius:10px;background:rgba(255,255,255,.1);font-size:13px}
+.setRow b{min-width:84px;text-align:center;font-family:'Outfit'}
+.redeem{display:flex;gap:8px;margin-top:8px}
+.redeem input{flex:1;min-width:0;padding:11px 14px;border-radius:12px;border:1.5px solid rgba(255,255,255,.25);background:rgba(0,0,0,.3);color:#fff;font:inherit;font-size:15px;outline:none}
+.redeem input:focus{border-color:var(--c)}
+.redeem button{padding:0 16px;border-radius:12px;background:linear-gradient(90deg,var(--c),var(--c2));color:#0a0d1f;font-weight:900}
+.redeemMsg{min-height:1.4em;margin-top:8px;font-size:13.5px;font-weight:800}
+#xpanel{position:fixed;top:60px;right:10px;z-index:30;width:min(320px,calc(100vw - 20px));max-height:calc(100vh - 80px);overflow-y:auto;display:none;
+  background:rgba(8,8,18,.94);border:1.5px solid #7dffb3;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.6);font-family:'Outfit',sans-serif;font-size:13px}
+#xpanel.show{display:block}
+#xpanel .xh{position:sticky;top:0;background:#0c1a14;padding:9px 12px;font-weight:900;letter-spacing:.12em;color:#7dffb3;border-bottom:1px solid rgba(125,255,179,.3);display:flex;justify-content:space-between;align-items:center}
+#xpanel .xh small{letter-spacing:0;font-weight:600;opacity:.7;color:#fff;font-size:10.5px}
+#xpanel .xc{padding:7px 12px 3px;font-size:10.5px;font-weight:900;letter-spacing:.18em;color:#ffd166;opacity:.85}
+#xpanel .xr{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;border-left:3px solid transparent}
+#xpanel .xr:hover{background:rgba(255,255,255,.05)}
+#xpanel .xr.sel{background:rgba(125,255,179,.12);border-left-color:#7dffb3}
+#xpanel .xr .xs{font-weight:900;font-size:11.5px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.1);white-space:nowrap}
+#xpanel .xr .xs.on{background:#7dffb3;color:#0a1a12}
+#xpanel .xr .xs.act{background:#ffd166;color:#1a1400}
+#xpanel .xr .xd{display:block;font-size:10.5px;opacity:.55;font-weight:500}
+#xpanel .xf{padding:8px 12px;font-size:10.5px;opacity:.6;border-top:1px solid rgba(255,255,255,.1);line-height:1.6}
+#fpsBox{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:29;font:800 12px Outfit,sans-serif;color:#7dffb3;background:rgba(0,0,0,.5);padding:2px 8px;border-radius:8px;display:none;pointer-events:none}
 #pauseBtn{position:fixed;top:12px;right:12px;z-index:4;width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);font-weight:900;display:none;font-family:'Outfit'}
 
 @media (max-width:720px){
@@ -179,6 +204,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
   <button class="pill pill2" data-act="lessons">📘 New here? Lessons <kbd>L</kbd></button>
   <button class="pill pill2" data-act="story" style="background:rgba(255,111,191,.12);border-color:rgba(255,111,191,.5)">📖 Story <kbd>S</kbd></button>
   <button class="pill pill2" data-act="charts" style="background:rgba(77,217,255,.12);border-color:rgba(77,217,255,.5)">🛠️ Chart Maker <kbd>C</kbd></button>
+  <button class="pill pill2" data-act="settings" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.3)">⚙️ Settings <kbd>O</kbd></button>
   <div class="howto">
     <div>Play with <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> &nbsp; <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> &nbsp;or tap the lanes</div>
     <div class="legend"><span class="n tap"></span>Tap<span class="n hold"></span>Hold<span class="n flick"></span>Flick (swipe up on touch)<span class="n crit"></span>Critical</div>
@@ -187,7 +213,7 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
 
 <div id="select" class="screen">
   <div class="selwrap">
-    <div class="head">SONG SELECT <button data-act="back">◀ Title</button><button data-act="lessons">📘 Lessons</button><button data-act="story">📖 Story</button><button data-act="charts">🛠️ Chart Maker</button></div>
+    <div class="head">SONG SELECT <button data-act="back">◀ Title</button><button data-act="lessons">📘 Lessons</button><button data-act="story">📖 Story</button><button data-act="charts">🛠️ Chart Maker</button><button data-act="settings">⚙️</button></div>
     <div class="songlist" id="songList"></div>
     <div class="detail">
       <div class="dPortrait" id="dPortrait"></div>
@@ -282,6 +308,21 @@ kbd{display:inline-block;min-width:1.7em;padding:.08em .45em;border-radius:6px;b
     </div>
   </div>
 </div>
+
+<div id="settings" class="screen">
+  <div class="panel">
+    <h2>SETTINGS</h2>
+    <div class="setRow"><span>Note speed</span><button data-act="spd-">◀</button><b id="sSpeed"></b><button data-act="spd+">▶</button></div>
+    <div class="setRow"><span>Audio offset</span><button data-act="off-">◀</button><b id="sOffset"></b><button data-act="off+">▶</button></div>
+    <div style="text-align:left;margin-top:18px;font-weight:900;letter-spacing:.1em;font-size:13px;opacity:.8">REDEEM CODE</div>
+    <div class="redeem"><input id="codeIn" type="text" placeholder="Enter a code…" autocomplete="off" autocapitalize="off" spellcheck="false"><button data-act="redeem">Redeem</button></div>
+    <div class="redeemMsg" id="redeemMsg"></div>
+    <div class="btns" style="margin-top:14px"><button class="btn" data-act="back">◀ Back <kbd>Esc</kbd></button></div>
+  </div>
+</div>
+
+<div id="xpanel"></div>
+<div id="fpsBox"></div>
 
 <div id="pause" class="screen">
   <div class="panel">
@@ -1118,6 +1159,8 @@ function sfx(kind){
     const g = AC.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     src.connect(f); f.connect(g); g.connect(sfxGain); src.start(t); src.stop(t + dur + 0.02);
   };
+  if (xon('mutehit') && kind !== 'blip' && kind !== 'metro') return;
+  if (kind === 'metro'){ ping(1760, 1760, 0.04, 0.12); return; }
   if (kind === 'blip'){ ping(660, 990, 0.08, 0.2); return; }
   if (kind === 'flick'){ hiss(1400, 7000, 0.12, 0.55, 0.9); ping(1200, 2600, 0.09, 0.18); return; }
   hiss(3200, 2400, 0.035, 0.5, 2);           // crisp "tak"
@@ -1473,7 +1516,7 @@ const UNIT_SONGS = {
 };
 function unitOfSong(id){ return UNITS.find(u => (UNIT_SONGS[u.id] || []).includes(id)) || null; }
 function clearsCount(){ return store.get('clears', []).length; }
-function chapterUnlocked(u, c){ return u.id === 'stage' || clearsCount() >= CHAPTER_NEED[c]; }
+function chapterUnlocked(u, c){ return u.id === 'stage' || store.get('story_all', false) || clearsCount() >= CHAPTER_NEED[c]; }
 function chapterRead(u, c){ return store.get('story_read', []).includes(u.id + ':' + c); }
 
 let storySel = { unit: 0, ch: 0 };
@@ -2032,6 +2075,179 @@ function edKey(k, e){
   renderEdBar();
 }
 
+/* ================= SETTINGS + SPECIAL PANEL =================
+   Secret code (stored only as a hash) unlocks a 32-module panel, toggled with ` or ~ */
+const cyrb53 = (str, seed = 0) => { let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed; for (let i = 0, ch; i < str.length; i++){ ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909); return 4294967296 * (2097151 & h2) + (h1 >>> 0); };
+const PANEL_CODE_HASH = 4645121458101123;
+const MODS = [
+  { cat:'AUTO' },
+  { id:'autobot',   name:'Unmarked Auto Bot',   desc:'Plays for you. No AUTO tag, scores save' },
+  { id:'botacc',    name:'Bot Accuracy',        desc:'How often the bot hits PERFECT', min:50, max:100, step:5, def:100, unit:'%' },
+  { id:'autohold',  name:'Auto Holds',          desc:'Holds stay held once you hit the start' },
+  { cat:'CHEATS' },
+  { id:'god',       name:'God Mode',            desc:'Life never goes down' },
+  { id:'nomiss',    name:'No Miss',             desc:'Misses secretly count as PERFECT' },
+  { id:'perfect',   name:'Perfect Everything',  desc:'Every hit is a PERFECT' },
+  { id:'combolock', name:'Combo Lock',          desc:'Combo never breaks' },
+  { id:'window',    name:'Timing Window',       desc:'Bigger = more forgiving', min:1, max:5, step:0.5, def:2, unit:'×' },
+  { id:'scoremul',  name:'Score Multiplier',    desc:'Score per note', min:1, max:10, step:1, def:2, unit:'×' },
+  { id:'skip',      name:'Skip 10 Seconds',     desc:'Skipped notes count as PERFECT', action:true },
+  { id:'finish',    name:'Finish Song',         desc:'Instantly ALL PERFECT the rest', action:true },
+  { cat:'UNLOCKS' },
+  { id:'unlocksongs',   name:'Unlock All Songs',      desc:'Unlocks SMG', action:true },
+  { id:'unlocklessons', name:'Unlock All Lessons',    desc:'', action:true },
+  { id:'unlockstory',   name:'Unlock All Story',      desc:'', action:true },
+  { cat:'VISUAL' },
+  { id:'hispeed',   name:'Hi-Speed',            desc:'Note speed, live', min:1, max:20, step:1, live:'speed' },
+  { id:'mirror',    name:'Mirror',              desc:'Flip the chart left ↔ right' },
+  { id:'random',    name:'Random Lanes',        desc:'Shuffles lanes (from next song)' },
+  { id:'hidden',    name:'Always Hidden',       desc:'Notes vanish before the line' },
+  { id:'sudden',    name:'Always Sudden',       desc:'Notes appear late' },
+  { id:'rainbow',   name:'Rainbow Notes',       desc:'' },
+  { id:'big',       name:'Big Notes',           desc:'Thicker notes' },
+  { id:'drunk',     name:'Drunk Highway',       desc:'The lanes wobble' },
+  { id:'hidehud',   name:'Hide HUD',            desc:'No score / combo / life' },
+  { id:'loweffects',name:'Low Effects',         desc:'No hit particles (faster)' },
+  { cat:'PRACTICE' },
+  { id:'timing',    name:'Hit Timing (ms)',     desc:'Shows how early / late you were' },
+  { id:'nextlane',  name:'Next Note Highlight', desc:'Lights up the lane coming next' },
+  { id:'metronome', name:'Metronome',           desc:'Clicks on every beat' },
+  { id:'stats',     name:'Live Stats',          desc:'Accuracy, notes/sec, notes left' },
+  { id:'nogimmick', name:'No Gimmicks',         desc:'Removes speed changes / hidden / shake' },
+  { cat:'MISC' },
+  { id:'fps',       name:'FPS Counter',         desc:'' },
+  { id:'mutehit',   name:'Mute Hit Sounds',     desc:'' },
+  { id:'restart',   name:'Restart Song',        desc:'', action:true },
+];
+const XP = { unlocked: store.get('xp_unlocked', false), open: false, sel: 0, on: store.get('xp_on', {}), val: store.get('xp_val', {}) };
+const xon = id => XP.unlocked && !!XP.on[id];
+const xval = id => { const m = MODS.find(q => q.id === id); return XP.val[id] ?? m.def; };
+function xSave(){ store.set('xp_on', XP.on); store.set('xp_val', XP.val); }
+const xRows = () => MODS.filter(m => m.id);
+
+function renderPanel(){
+  const el = $('xpanel');
+  if (!XP.unlocked){ el.classList.remove('show'); return; }
+  el.classList.toggle('show', XP.open);
+  if (!XP.open) return;
+  const rows = xRows(); XP.sel = clamp(XP.sel, 0, rows.length - 1);
+  let html = `<div class="xh">⚡ SPECIAL PANEL <small>${rows.filter(m => XP.on[m.id] && !m.action).length} on</small></div>`;
+  for (const m of MODS){
+    if (m.cat){ html += `<div class="xc">${m.cat}</div>`; continue; }
+    const i = rows.indexOf(m), v = m.min != null;
+    let state, cls = '';
+    if (m.action){ state = 'RUN'; cls = 'act'; }
+    else if (m.live === 'speed'){ state = settings.speed; cls = 'on'; }
+    else if (v){ state = (XP.on[m.id] ? '' : 'OFF · ') + xval(m.id) + m.unit; cls = XP.on[m.id] ? 'on' : ''; }
+    else { state = XP.on[m.id] ? 'ON' : 'OFF'; cls = XP.on[m.id] ? 'on' : ''; }
+    html += `<div class="xr ${i === XP.sel ? 'sel' : ''}" data-xmod="${m.id}"><span>${m.name}${m.desc ? `<span class="xd">${m.desc}</span>` : ''}</span><span class="xs ${cls}">${state}</span></div>`;
+  }
+  html += `<div class="xf"><kbd>\`</kbd> show/hide · <kbd>↑</kbd><kbd>↓</kbd> pick · <kbd>Enter</kbd> toggle · <kbd>←</kbd><kbd>→</kbd> adjust</div>`;
+  el.innerHTML = html;
+  const s2 = el.querySelector('.xr.sel'); if (s2 && s2.scrollIntoView) s2.scrollIntoView({ block:'nearest' });
+}
+function xToggle(id){
+  const m = MODS.find(q => q.id === id); if (!m) return;
+  if (m.action) return xAction(id);
+  if (m.live === 'speed') return;
+  XP.on[id] = !XP.on[id]; xSave();
+  xLive(id);
+  sfx('blip'); renderPanel();
+}
+function xAdjust(id, dir){
+  const m = MODS.find(q => q.id === id); if (!m || m.min == null) return;
+  if (m.live === 'speed'){ settings.speed = clamp(settings.speed + dir, m.min, m.max); store.set('speed', settings.speed); }
+  else { XP.val[id] = clamp(+(xval(id) + dir * m.step).toFixed(2), m.min, m.max); xSave(); }
+  sfx('blip'); renderPanel();
+  if (screen === 'select') renderSelect();
+  if (screen === 'settings') renderSettings();
+}
+function mirrorNotes(G){ for (const n of G.notes){ n.lane = LANES - n.lane - n.w; if (n.lane2 != null) n.lane2 = LANES - n.lane2 - n.w; } }
+function xLive(id){
+  const G = game;
+  if (id === 'fps') $('fpsBox').style.display = xon('fps') ? 'block' : 'none';
+  if (!G) return;
+  if (id === 'mirror') mirrorNotes(G);
+  if (id === 'nogimmick' && xon('nogimmick')){ G.events = []; G.speedSegs = []; }
+}
+function xAction(id){
+  const G = game && !game.ended ? game : null;
+  sfx('crit');
+  switch (id){
+    case 'skip': {
+      if (!G) return toast('Start a song first');
+      const now = songNow(), to = now + 10;
+      for (const n of G.notes) if (n.t < to && n.state !== 2) xPerfect(n);
+      G.t0 -= 10;
+      if (G.srcNode){ try { G.srcNode.stop(); } catch (e) {} const sn = AC.createBufferSource(); sn.buffer = G.song.buffer; sn.connect(G.bus); sn.start(AC.currentTime, Math.max(0, to)); G.srcNode = sn; }
+      toast('⏩ Skipped 10 seconds'); break;
+    }
+    case 'finish': {
+      if (!G) return toast('Start a song first');
+      for (const n of G.notes) if (n.state !== 2) xPerfect(n);
+      endGame(); break;
+    }
+    case 'restart': if (game) retry(); else toast('Start a song first'); break;
+    case 'unlocksongs': { const cl = store.get('clears', []); if (!cl.includes('terminal_0')){ cl.push('terminal_0'); store.set('clears', cl); } toast('🔓 All songs unlocked'); if (screen === 'select') renderSelect(); break; }
+    case 'unlocklessons': store.set('lessons_unlocked', LESSONS.length); toast('🔓 All lessons unlocked'); if (screen === 'lessons') renderLessons(); break;
+    case 'unlockstory': store.set('story_all', true); toast('🔓 All story chapters unlocked'); if (screen === 'story') renderStory(); break;
+  }
+}
+// silently count a note (and its hold tail) as PERFECT
+function xPerfect(n){
+  const G = game, parts = n.type === 'hold' ? (n.state === 1 ? 1 : 2) : 1;
+  for (let k = 0; k < parts; k++){
+    G.counts[0]++; G.score += 1e6 * (xon('scoremul') ? xval('scoremul') : 1) / G.total;
+    G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo);
+  }
+  n.state = 2;
+}
+function winNow(){
+  const w = game.win, m = xon('window') ? xval('window') : 1;
+  return m === 1 ? w : { perfect: w.perfect * m, great: w.great * m, good: w.good * m, bad: w.bad * m };
+}
+function hslHex(h, s2, l){
+  s2 /= 100; l /= 100;
+  const f = k => { const kk = (k + h / 30) % 12, c = l - s2 * Math.min(l, 1 - l) * Math.max(-1, Math.min(kk - 3, 9 - kk, 1)); return Math.round(255 * c).toString(16).padStart(2, '0'); };
+  return '#' + f(0) + f(8) + f(4);
+}
+let fpsAcc = 0, fpsN = 0, fpsT = 0;
+function xFrame(dt){
+  if (!xon('fps')) return;
+  fpsAcc += dt; fpsN++;
+  if (performance.now() - fpsT > 500){ $('fpsBox').textContent = Math.round(fpsN / Math.max(1e-3, fpsAcc)) + ' FPS'; fpsAcc = 0; fpsN = 0; fpsT = performance.now(); }
+}
+function xKey(e, k){
+  if (!XP.unlocked) return false;
+  if (e.key === '`' || e.key === '~'){ XP.open = !XP.open; renderPanel(); e.preventDefault(); return true; }
+  if (!XP.open) return false;
+  const rows = xRows(), m = rows[XP.sel];
+  if (k === 'arrowup'){ XP.sel = Math.max(0, XP.sel - 1); renderPanel(); return true; }
+  if (k === 'arrowdown'){ XP.sel = Math.min(rows.length - 1, XP.sel + 1); renderPanel(); return true; }
+  if (k === 'arrowleft' || k === 'arrowright'){ if (m.min != null) xAdjust(m.id, k === 'arrowright' ? 1 : -1); return true; }
+  if (k === 'enter'){ xToggle(m.id); return true; }
+  return false;
+}
+function renderSettings(){
+  $('sSpeed').textContent = settings.speed;
+  $('sOffset').textContent = (settings.offset > 0 ? '+' : '') + settings.offset + ' ms';
+  if (XP.unlocked && !$('redeemMsg').textContent) $('redeemMsg').innerHTML = '<span style="color:#7dffb3">✅ Special panel unlocked: press <kbd>`</kbd> (or <kbd>~</kbd>) to open it</span>';
+}
+function redeem(){
+  const v = $('codeIn').value.trim();
+  if (!v) return;
+  if (cyrb53(v, 7) === PANEL_CODE_HASH){
+    XP.unlocked = true; store.set('xp_unlocked', true);
+    $('redeemMsg').innerHTML = '<span style="color:#7dffb3">✅ Code redeemed! Press <kbd>`</kbd> (or <kbd>~</kbd>) anywhere, even in songs, to open the special panel</span>';
+    $('codeIn').value = ''; $('codeIn').blur();
+    sfx('crit'); toast('⚡ Special panel unlocked!');
+  } else {
+    $('redeemMsg').innerHTML = '<span style="color:#ff4d6d">❌ Invalid code</span>';
+    sfx('blip');
+  }
+}
+if (XP.unlocked && XP.on.fps) setTimeout(() => xLive('fps'), 0);
+
 /* ================= GAME STATE ================= */
 let screen = 'notice';
 const sel = { song: 0, diff: 0 };
@@ -2077,7 +2293,12 @@ function startGame(lessonIdx, opts){
   const crossMode = lessonIdx == null && !lastChartCtx && !!song.cross;
   setLayout(6);
   const notes = src.map((n, i) => ({ ...n, state: 0, id: i }));
-  const events = src.events || [];
+  let events = src.events || [];
+  if (xon('nogimmick')) events = [];
+  if (xon('random')){
+    const perm = [0, 1, 2, 3, 4, 5].sort(() => Math.random() - 0.5);
+    for (const n of notes) if (n.w === 1){ n.lane = perm[n.lane]; if (n.lane2 != null) n.lane2 = perm[n.lane2]; }
+  }
   const total = notes.reduce((a, n) => a + (n.type === 'hold' ? 2 : 1), 0);
   const bus = AC.createGain(); bus.connect(master); OUT = bus;
   game = {
@@ -2091,6 +2312,7 @@ function startGame(lessonIdx, opts){
     events, speedSegs: events.filter(e => e.kind === 'speed'), roads: crossMode ? song.roads : 1,
   };
   if (lastChartCtx && lastChartCtx.startAt) game.t0 -= lastChartCtx.startAt;
+  if (xon('mirror')) mirrorNotes(game);
   if (song.custom && song.buffer){
     const srcNode = AC.createBufferSource(); srcNode.buffer = song.buffer; srcNode.connect(bus);
     srcNode.start(game.t0); game.srcNode = srcNode;
@@ -2138,17 +2360,21 @@ function scheduleAudio(){
 
 function judgeOf(dt){
   dt = Math.abs(dt);
-  const w = game.win;
+  const w = winNow();
   return dt <= w.perfect ? 0 : dt <= w.great ? 1 : dt <= w.good ? 2 : 3;
 }
 function judge(n, j, tail){
   const G = game;
+  if (xon('perfect') && j < 4) j = 0;
+  if (xon('nomiss') && j === 4) j = 0;
   G.counts[j]++;
-  G.score += 1e6 * JUDGE_SCORE[j] / G.total;
+  G.score += 1e6 * JUDGE_SCORE[j] / G.total * (xon('scoremul') ? xval('scoremul') : 1);
   if (j <= 1){ G.combo++; G.maxCombo = Math.max(G.maxCombo, G.combo); G.comboPulse = 1; }
-  else G.combo = 0;
-  if (j === 3) G.life -= 20;
-  if (j === 4) G.life -= 60;
+  else if (!xon('combolock')) G.combo = 0;
+  if (!xon('god')){
+    if (j === 3) G.life -= 20;
+    if (j === 4) G.life -= 60;
+  }
   G.lastJudge = { j, at: performance.now() };
   if (j < 4){
     spawnHit(n, j, tail);
@@ -2164,10 +2390,10 @@ function pressLane(lane, src){
   let best = null;
   for (let i = G.first; i < N.length; i++){
     const n = N[i];
-    if (n.t - now > G.win.bad) break;
+    if (n.t - now > winNow().bad) break;
     if (n.state !== 0) continue;
     if (lane < n.lane || lane >= n.lane + n.w) continue;
-    if (now - n.t > G.win.bad) continue;
+    if (now - n.t > winNow().bad) continue;
     best = n; break;
   }
   if (!best) return;
@@ -2175,6 +2401,7 @@ function pressLane(lane, src){
   if (best.type === 'flick' && src[0] === 'p'){ best.state = 3; best.pfj = j; best.pid = src; return; }
   judge(best, j);
   if (j > 0) game.lastJudge.fast = now < best.t;
+  game.lastJudge.ms = Math.round((now - best.t) * 1000);
   if (best.type === 'hold'){ best.state = 1; best.src = src; }
   else best.state = 2;
 }
@@ -2187,10 +2414,12 @@ function update(){
     const n = N[i];
     if (n.t > now + 0.5) break;
     if (n.state === 0){
-      if (G.auto && now >= n.t){
-        judge(n, 0);
+      if ((G.auto || xon('autobot')) && now >= n.t){
+        let bj = 0;
+        if (!G.auto && xon('autobot')){ const a = xval('botacc') / 100, r = Math.random(); bj = r < a ? 0 : r < a + (1 - a) * 0.75 ? 1 : 2; }
+        judge(n, bj);
         if (n.type === 'hold'){ n.state = 1; n.src = 'auto'; } else n.state = 2;
-      } else if (now > n.t + G.win.bad){
+      } else if (now > n.t + winNow().bad){
         judge(n, 4);
         if (n.type === 'hold') judge(n, 4, true);
         n.state = 2; n.missed = true; (G.missed ||= []).push(n);
@@ -2214,6 +2443,7 @@ function update(){
   for (let l = 0; l < LANES; l++) if (down.has('k' + l)) G.laneFlash[l] = Math.max(G.laneFlash[l], 0.5);
   for (const p of ptrs.values()) G.laneFlash[p.lane] = Math.max(G.laneFlash[p.lane], 0.5);
   const b = (now - (G.gen.beatOffset || 0)) / G.gen.beat;
+  { const bi = Math.floor(b); if (xon('metronome') && now > 0 && bi !== G.lastBeat){ G.lastBeat = bi; sfx('metro'); } }
   G.beatPulse = now > 0 ? Math.max(0, 1 - (b - Math.floor(b)) * 3) : 0;
   if (!G.ended && now > G.gen.duration - 1.5 && G.first >= N.length) endGame();
 }
@@ -2227,7 +2457,7 @@ function holdPos(n, t){
 }
 // Held if any pressed key / finger is on a lane the hold currently covers
 function holdHeld(n, now){
-  if (n.src === 'auto') return true;
+  if (n.src === 'auto' || xon('autohold')) return true;
   const p = holdPos(n, now), lo = Math.floor(p + 1e-3), hi = Math.ceil(p + n.w - 1e-3) - 1;
   for (let l = lo; l <= hi; l++) if (down.has('k' + l)) return true;
   for (const q of ptrs.values()) if (q.lane >= lo && q.lane <= hi) return true;
@@ -2245,6 +2475,8 @@ function scrollPos(G, t){
 }
 function activeEvent(G, kind, now){ return G.events.find(e => e.kind === kind && now >= e.t0 && now < e.t1); }
 function noteAlpha(G, d, now){
+  if (xon('hidden')) return clamp((d - 0.22) / 0.15, 0, 1);
+  if (xon('sudden')) return clamp((0.55 - d) / 0.12, 0, 1);
   if (!G.events.length) return 1;
   if (activeEvent(G, 'hidden', now)) return clamp((d - 0.22) / 0.15, 0, 1);   // vanish before the line
   if (activeEvent(G, 'sudden', now)) return clamp((0.55 - d) / 0.12, 0, 1);   // appear late
@@ -2252,9 +2484,13 @@ function noteAlpha(G, d, now){
 }
 
 /* ================= EFFECTS ================= */
-function noteColor(n){ return n.crit ? NOTE_COL.crit : NOTE_COL[n.type]; }
+function noteColor(n){
+  if (xon('rainbow')){ const h = (performance.now() / 8 + n.t * 180 + n.lane * 40) % 360; return [hslHex(h, 100, 88), hslHex(h, 95, 62), hslHex(h, 90, 42)]; }
+  return n.crit ? NOTE_COL.crit : NOTE_COL[n.type];
+}
 function spawnHit(n, j, tail){
   const G = game;
+  if (xon('loweffects')) return;
   const lane = tail && n.lane2 != null ? n.lane2 : n.lane;
   const x = xAt(lane + n.w / 2, 1), w = n.w * L.hw / LANES;
   const col = noteColor(n);
@@ -2270,6 +2506,7 @@ function spawnHit(n, j, tail){
   }
 }
 function spawnSpark(n, p){
+  if (xon('loweffects')) return;
   const x = xAt((p ?? n.lane) + Math.random() * n.w, 1);
   game.parts.push({ x, y: L.judgeY, vx: (Math.random() - .5) * 60, vy: -(150 + Math.random() * 250) * L.u, life: 0, max: 0.45, col: NOTE_COL.hold[1], s: (3 + Math.random() * 4) * L.u, r: Math.random() * 3, vr: 6 });
 }
@@ -2307,7 +2544,7 @@ function drawNote(n, d, flickPending, laneAt){
   const p = proj(d), s = p.s, u = L.u;
   const lp = laneAt ?? n.lane;
   const x0 = xAt(lp + 0.02, s), x1 = xAt(lp + n.w - 0.02, s);
-  const h = Math.max(4, 25 * s * u), y = p.y;
+  const h = Math.max(4, 25 * s * u) * (xon('big') ? 1.7 : 1), y = p.y;
   const col = noteColor(n);
   cx.save();
   cx.globalAlpha *= clamp((1.06 - d) / 0.18, 0, 1);       // fade in from the horizon
@@ -2420,6 +2657,10 @@ function drawGame(dt){
   const nowPos = scrollPos(G, now), D = t => (scrollPos(G, t) - nowPos) / vis;
   const shake = activeEvent(G, 'shake', now);
   cx.save();
+  if (xon('drunk')){
+    const tt = performance.now() / 1000;
+    cx.translate(L.cx, L.judgeY); cx.rotate(Math.sin(tt * 1.3) * 0.09); cx.translate(-L.cx + Math.sin(tt * 0.9) * 30 * u, -L.judgeY);
+  }
   if (shake && !G.paused){
     const a = shake.a0 + (shake.a1 - shake.a0) * (now - shake.t0) / (shake.t1 - shake.t0);
     cx.translate((Math.random() - .5) * a * 2, (Math.random() - .5) * a * 2);
@@ -2661,7 +2902,24 @@ function drawGame(dt){
     }
   }
 
-  drawHud(now, u, top);
+  if (xon('nextlane')){
+    const nx = G.notes.find((n, i) => i >= G.first && n.state === 0);
+    if (nx && D(nx.t) < 1){
+      const a = proj(0), b = proj(Math.min(1, D(nx.t)));
+      cx.beginPath();
+      cx.moveTo(xAt(nx.lane, a.s), a.y); cx.lineTo(xAt(nx.lane + nx.w, a.s), a.y); cx.lineTo(xAt(nx.lane + nx.w, b.s), b.y); cx.lineTo(xAt(nx.lane, b.s), b.y); cx.closePath();
+      cx.fillStyle = 'rgba(255,230,102,.16)'; cx.fill();
+    }
+  }
+  if (xon('stats')){
+    const judged = G.counts.reduce((x, y2) => x + y2, 0);
+    const acc = judged ? G.counts.reduce((x, c, k) => x + c * JUDGE_SCORE[k], 0) / judged * 100 : 100;
+    const left = G.notes.filter(n => n.state !== 2).length;
+    const nps = G.notes.filter(n => n.t > now - 1 && n.t <= now).length;
+    cx.font = '800 12px Outfit, sans-serif'; cx.textAlign = 'right'; cx.fillStyle = 'rgba(255,255,255,.85)';
+    [`ACC ${acc.toFixed(2)}%`, `${nps} notes/sec`, `${left} notes left`].forEach((t2, i) => cx.fillText(t2, W - 66, 72 + i * 16));
+  }
+  if (!xon('hidehud')) drawHud(now, u, top);
 }
 
 function drawHud(now, u, top){
@@ -2757,6 +3015,12 @@ function drawHud(now, u, top){
       cx.shadowColor = G.lastJudge.j === 0 ? '#ff9de0' : JUDGE_COLORS[G.lastJudge.j]; cx.shadowBlur = 16;
       cx.strokeText(jn, 0, 0);
       cx.shadowBlur = 0; cx.fillStyle = jf; cx.fillText(jn, 0, 0);
+      if (xon('timing') && G.lastJudge.ms != null && G.lastJudge.j < 4){
+        const ms = G.lastJudge.ms;
+        cx.font = `800 ${Math.round(fs * 0.38)}px Outfit, sans-serif`;
+        cx.fillStyle = Math.abs(ms) < 20 ? '#ffe066' : ms < 0 ? '#5ee0ff' : '#ff7ab8';
+        cx.fillText((ms > 0 ? '+' : '') + ms + ' ms', 0, -fs * 0.85);
+      }
       if (G.lastJudge.fast != null && G.lastJudge.j > 0 && G.lastJudge.j < 4){
         const fast = G.lastJudge.fast;
         cx.font = `italic 900 ${Math.round(fs * 0.45)}px Outfit, sans-serif`;
@@ -2947,6 +3211,8 @@ function act(a){
     case 'menu': backToMenu(); break;
     case 'noticeok': sharedChart ? showShared() : showScreen('title'); sfx('blip'); break;
     case 'charts': showCharts(); break;
+    case 'settings': initAudio(); showScreen('settings'); renderSettings(); setTimeout(() => $('codeIn').focus(), 50); break;
+    case 'redeem': redeem(); break;
     case 'newchart': newChart(); break;
     case 'importchart': {
       const link = prompt('Paste a chart link:');
@@ -2999,11 +3265,13 @@ function act(a){
       break;
     }
   }
+  if (screen === 'settings') renderSettings();
+  if (XP.open) renderPanel();
 }
 
 /* ================= INPUT ================= */
 document.addEventListener('click', e => {
-  const b = e.target.closest('[data-act],[data-song],[data-diff],[data-lesson],[data-unit],[data-chapter],[data-chart]');
+  const b = e.target.closest('[data-act],[data-song],[data-diff],[data-lesson],[data-unit],[data-chapter],[data-chart],[data-xmod]');
   if (!b) return;
   initAudio();
   if (b.blur) b.blur();
@@ -3012,12 +3280,19 @@ document.addEventListener('click', e => {
   else if (b.dataset.lesson != null){ lsel = +b.dataset.lesson; renderLessons(); sfx('blip'); }
   else if (b.dataset.unit != null){ storySel.unit = +b.dataset.unit; storySel.ch = 0; renderStory(); sfx('blip'); }
   else if (b.dataset.chapter != null){ storySel.ch = +b.dataset.chapter; openChapter(storySel.unit, storySel.ch); }
+  else if (b.dataset.xmod != null){ XP.sel = xRows().findIndex(m => m.id === b.dataset.xmod); xToggle(b.dataset.xmod); }
   else if (b.dataset.chart != null){ ED.sel = +b.dataset.chart; renderCharts(); sfx('blip'); }
   else act(b.dataset.act);
 });
 
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
+  if (e.target && e.target.tagName === 'INPUT'){
+    if (k === 'enter'){ e.preventDefault(); act('redeem'); }
+    else if (k === 'escape') e.target.blur();
+    return;
+  }
+  if (xKey(e, k)){ e.preventDefault(); return; }
   if ([' ', 'enter', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'tab'].includes(k)) e.preventDefault();
   initAudio();
   if (screen === 'game'){
@@ -3043,7 +3318,8 @@ addEventListener('keydown', e => {
   }
   if (e.repeat && (k === 'enter' || k === ' ')) return;
   if (screen === 'notice'){ if (k === 'enter' || k === ' ' || k === 'escape') act('noticeok'); }
-  else if (screen === 'title'){ if (k === 'enter' || k === ' ') goSelect(); else if (k === 'l') showLessons(); else if (k === 's') showStory(); else if (k === 'c') showCharts(); }
+  else if (screen === 'title'){ if (k === 'enter' || k === ' ') goSelect(); else if (k === 'l') showLessons(); else if (k === 's') showStory(); else if (k === 'c') showCharts(); else if (k === 'o') act('settings'); }
+  else if (screen === 'settings'){ if (k === 'escape') showScreen('title'); else if (k === 'arrowleft') act('spd-'); else if (k === 'arrowright') act('spd+'); else if (k === '[') act('off-'); else if (k === ']') act('off+'); }
   else if (screen === 'charts'){
     switch (k){
       case 'arrowup': ED.sel = Math.max(0, ED.sel - 1); renderCharts(); sfx('blip'); break;
@@ -3160,6 +3436,7 @@ addEventListener('blur', () => pauseGame());
 let lastTs = performance.now();
 function loop(ts){
   const dt = Math.min(0.05, (ts - lastTs) / 1000); lastTs = ts;
+  xFrame(dt);
   if (game && !game.paused && !game.ended) update();
   const inEditor = !game && screen === 'editor' && ED.cur;
   drawBg(game ? game.song : inEditor ? SONGS[ED.songIdx] : SONGS[sel.song], ts / 1000, dt);
